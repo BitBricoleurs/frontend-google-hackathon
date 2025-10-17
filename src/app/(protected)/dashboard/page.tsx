@@ -16,55 +16,6 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="bg-card shadow-sm border-b border-border">
-        <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-                <PhoneIcon className="h-6 w-6 text-primary-foreground" weight="fill" />
-              </div>
-              <div>
-                <h1 className="text-xl font-semibold text-card-foreground">
-                  Emergency Response Dashboard
-                </h1>
-                <p className="text-sm text-muted-foreground">
-                  AI-Assisted Call Management
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-              {/* Admin Panel Link - Only visible to admins */}
-              {responder?.role === "admin" && (
-                <Link
-                  href="/admin"
-                  className="rounded-lg bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:opacity-90 transition-opacity flex items-center gap-2"
-                >
-                  <LockIcon className="h-4 w-4" weight="bold" />
-                  Admin Panel
-                </Link>
-              )}
-
-              <div className="text-right">
-                <p className="text-sm font-medium text-card-foreground">
-                  {responder?.name}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {responder?.responderId} • {responder?.role}
-                </p>
-              </div>
-              <button
-                onClick={logout}
-                className="rounded-lg bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground hover:opacity-90 transition-opacity"
-              >
-                Sign Out
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
       {/* Main Content */}
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Stats Overview */}
@@ -148,7 +99,9 @@ function StatCard({
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm font-medium text-muted-foreground">{title}</p>
-          <p className="mt-2 text-3xl font-bold text-card-foreground">{value}</p>
+          <p className="mt-2 text-3xl font-bold text-card-foreground">
+            {value}
+          </p>
         </div>
         <div className={`rounded-lg p-3 ${colorClasses[color]}`}>
           {icons[icon]}
