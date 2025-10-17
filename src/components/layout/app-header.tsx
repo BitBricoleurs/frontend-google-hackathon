@@ -1,15 +1,14 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import {
   MagnifyingGlassIcon,
   BellIcon,
-  LockIcon,
   DotsThreeVerticalIcon,
   UserIcon,
   CreditCardIcon,
   SignOutIcon,
 } from "@phosphor-icons/react";
-import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -22,8 +21,52 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Separator } from "@/components/ui/separator";
+
 export function AppHeader() {
   const { responder, logout } = useAuth();
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Update time every second
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  // Format date and time
+  const formatDateTime = (date: Date) => {
+    const days = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+    const months = [
+      "JAN",
+      "FEB",
+      "MAR",
+      "APR",
+      "MAY",
+      "JUN",
+      "JUL",
+      "AUG",
+      "SEP",
+      "OCT",
+      "NOV",
+      "DEC",
+    ];
+
+    const dayName = days[date.getDay()];
+    const monthName = months[date.getMonth()];
+    const day = date.getDate();
+    const hours = date.getHours().toString().padStart(2, "0");
+    const minutes = date.getMinutes().toString().padStart(2, "0");
+
+    return {
+      date: `${dayName}, ${monthName} ${day}`,
+      time: `${hours}:${minutes}`,
+    };
+  };
+
+  const { date, time } = formatDateTime(currentTime);
 
   // Get initials from responder name
   const getInitials = (name?: string) => {
@@ -60,16 +103,11 @@ export function AppHeader() {
 
       {/* Right Side - Actions & User */}
       <div className="flex items-center gap-3">
-        {/* Admin Panel Link - Only visible to admins */}
-        {responder?.role === "admin" && (
-          <Link
-            href="/admin"
-            className="rounded-lg bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:opacity-90 transition-opacity flex items-center gap-2"
-          >
-            <LockIcon className="h-4 w-4" weight="bold" />
-            Admin Panel
-          </Link>
-        )}
+        <div className="flex items-center gap-2 text-sm font-medium text-foreground whitespace-nowrap">
+          <span>{date}</span>
+          <span className="text-muted-foreground">•</span>
+          <span>{time}</span>
+        </div>
 
         {/* Notification Bell */}
         <button
@@ -85,6 +123,7 @@ export function AppHeader() {
           <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-destructive ring-2 ring-card" />
         </button>
 
+        <Separator orientation="vertical" />
         {/* User Dropdown Menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

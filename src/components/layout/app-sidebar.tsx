@@ -3,7 +3,12 @@
 import * as React from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { HouseSimple, Phone, UsersThree } from "@phosphor-icons/react";
+import {
+  HouseSimple,
+  Phone,
+  UsersThree,
+  LockIcon,
+} from "@phosphor-icons/react";
 import { useAuth } from "@/contexts/auth-context";
 import { cn } from "@/lib/utils";
 import { NavUser } from "./nav-user";
@@ -83,6 +88,31 @@ export function AppSidebar() {
           );
         })}
       </nav>
+
+      {/* Admin Panel - Only visible to admins */}
+      {responder?.role === "admin" && (
+        <footer className="border-t border-sidebar-border p-3">
+          <Link
+            href="/admin"
+            className={cn(
+              "flex flex-col items-center justify-center gap-2 py-4 px-3 rounded-lg transition-colors",
+              pathname === "/admin" || pathname?.startsWith("/admin/")
+                ? "bg-accent text-accent-foreground"
+                : "text-sidebar-foreground hover:bg-accent/10"
+            )}
+          >
+            <LockIcon
+              className="h-6 w-6"
+              weight={
+                pathname === "/admin" || pathname?.startsWith("/admin/")
+                  ? "fill"
+                  : "regular"
+              }
+            />
+            <span className="text-xs font-medium text-center">Admin</span>
+          </Link>
+        </footer>
+      )}
     </aside>
   );
 }
