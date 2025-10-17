@@ -34,23 +34,23 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-md">
-        <div className="rounded-2xl bg-white p-8 shadow-xl">
+        <div className="rounded-lg bg-card p-8 shadow-lg border border-border">
           {/* Header */}
           <div className="mb-8 text-center">
             <div className="mb-4 flex justify-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-600">
+              <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-primary">
                 <IdentificationCardIcon
-                  className="h-8 w-8 text-white"
+                  className="h-8 w-8 text-primary-foreground"
                   weight="fill"
                 />
               </div>
             </div>
-            <h1 className="text-3xl font-bold text-gray-900">
+            <h1 className="text-3xl font-bold text-card-foreground">
               Emergency Response
             </h1>
-            <p className="mt-2 text-sm text-gray-600">
+            <p className="mt-2 text-sm text-muted-foreground">
               AI-Assisted 911/15 Response System
             </p>
           </div>
@@ -58,10 +58,10 @@ export default function LoginPage() {
           {/* Login Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
-              <div className="rounded-lg bg-red-50 border border-red-200 p-4">
+              <div className="rounded-lg bg-destructive/10 border border-destructive/30 p-4">
                 <div className="flex items-center gap-2">
-                  <XCircleIcon className="h-5 w-5 text-red-600" weight="fill" />
-                  <p className="text-sm text-red-800">{error}</p>
+                  <XCircleIcon className="h-5 w-5 text-destructive" weight="fill" />
+                  <p className="text-sm text-destructive">{error}</p>
                 </div>
               </div>
             )}
@@ -69,7 +69,7 @@ export default function LoginPage() {
             <div>
               <label
                 htmlFor="responderId"
-                className="block text-sm font-medium text-gray-700 mb-2"
+                className="block text-sm font-medium text-foreground mb-2"
               >
                 Responder ID
               </label>
@@ -79,7 +79,7 @@ export default function LoginPage() {
                 value={responderId}
                 onChange={(e) => setResponderId(e.target.value)}
                 placeholder="e.g., RESP001"
-                className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                className="w-full rounded-lg border border-input bg-background px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20"
                 disabled={isLoading}
                 autoComplete="username"
               />
@@ -88,7 +88,7 @@ export default function LoginPage() {
             <div>
               <label
                 htmlFor="password"
-                className="block text-sm font-medium text-gray-700 mb-2"
+                className="block text-sm font-medium text-foreground mb-2"
               >
                 Password
               </label>
@@ -98,7 +98,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter your password"
-                className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                className="w-full rounded-lg border border-input bg-background px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20"
                 disabled={isLoading}
                 autoComplete="current-password"
               />
@@ -107,7 +107,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full rounded-lg bg-blue-600 px-4 py-3 text-white font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full rounded-lg bg-primary px-4 py-3 text-primary-foreground font-medium hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
             >
               {isLoading ? (
                 <span className="flex items-center justify-center gap-2">
@@ -124,11 +124,11 @@ export default function LoginPage() {
           </form>
 
           {/* Mock Credentials Info (Remove in production) */}
-          <div className="mt-6 rounded-lg bg-gray-50 border border-gray-200 p-4">
-            <p className="text-xs font-semibold text-gray-700 mb-2">
+          <div className="mt-6 rounded-lg bg-muted border border-border p-4">
+            <p className="text-xs font-semibold text-foreground mb-2">
               Mock Test Credentials:
             </p>
-            <div className="space-y-1 text-xs text-gray-600">
+            <div className="space-y-1 text-xs text-muted-foreground">
               <p>
                 <span className="font-medium">Responder:</span> RESP001 /
                 password123
@@ -145,7 +145,7 @@ export default function LoginPage() {
         </div>
 
         {/* Footer */}
-        <p className="mt-6 text-center text-xs text-gray-600">
+        <p className="mt-6 text-center text-xs text-muted-foreground">
           Authorized personnel only. All activities are monitored.
         </p>
       </div>

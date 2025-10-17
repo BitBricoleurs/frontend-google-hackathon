@@ -28,46 +28,46 @@ function AdminContent() {
   const { responder, logout } = useAuth();
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
+      <header className="bg-card shadow-sm border-b border-border">
         <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-600">
-                <LockIcon className="h-6 w-6 text-white" weight="fill" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-destructive">
+                <LockIcon className="h-6 w-6 text-destructive-foreground" weight="fill" />
               </div>
               <div>
-                <h1 className="text-xl font-semibold text-gray-900">
+                <h1 className="text-xl font-semibold text-card-foreground">
                   Admin Panel
                 </h1>
-                <p className="text-sm text-gray-600">System Administration</p>
+                <p className="text-sm text-muted-foreground">System Administration</p>
               </div>
             </div>
 
             <div className="flex items-center gap-4">
               <Link
                 href="/dashboard"
-                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors flex items-center gap-2"
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity flex items-center gap-2"
               >
                 <ArrowLeftIcon className="h-4 w-4" weight="bold" />
                 Back to Dashboard
               </Link>
 
               <div className="text-right">
-                <p className="text-sm font-medium text-gray-900">
+                <p className="text-sm font-medium text-card-foreground">
                   {responder?.name}
                 </p>
-                <p className="text-xs text-gray-600">
+                <p className="text-xs text-muted-foreground">
                   {responder?.responderId} •{" "}
-                  <span className="text-red-600 font-semibold">
+                  <span className="text-destructive font-semibold">
                     {responder?.role}
                   </span>
                 </p>
               </div>
               <button
                 onClick={logout}
-                className="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 transition-colors"
+                className="rounded-lg bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground hover:opacity-90 transition-opacity"
               >
                 Sign Out
               </button>
@@ -183,10 +183,10 @@ function AdminStatCard({
   color: "blue" | "green" | "purple" | "orange";
 }) {
   const colorClasses = {
-    blue: "bg-blue-50 text-blue-600",
-    green: "bg-green-50 text-green-600",
-    purple: "bg-purple-50 text-purple-600",
-    orange: "bg-orange-50 text-orange-600",
+    blue: "bg-chart-1/10 text-chart-1",
+    green: "bg-primary/10 text-primary",
+    purple: "bg-chart-3/10 text-chart-3",
+    orange: "bg-chart-4/10 text-chart-4",
   };
 
   const icons = {
@@ -197,15 +197,15 @@ function AdminStatCard({
   };
 
   return (
-    <div className="rounded-lg bg-white p-6 shadow-sm border border-gray-200">
+    <div className="rounded-lg bg-card p-6 shadow-sm border border-border">
       <div className="flex items-center justify-between mb-2">
-        <p className="text-sm font-medium text-gray-600">{title}</p>
-        <div className={`rounded-full p-2 ${colorClasses[color]}`}>
+        <p className="text-sm font-medium text-muted-foreground">{title}</p>
+        <div className={`rounded-lg p-2 ${colorClasses[color]}`}>
           {icons[icon]}
         </div>
       </div>
-      <p className="text-2xl font-bold text-gray-900">{value}</p>
-      <p className="text-xs text-gray-500 mt-1">{change}</p>
+      <p className="text-2xl font-bold text-card-foreground">{value}</p>
+      <p className="text-xs text-muted-foreground mt-1">{change}</p>
     </div>
   );
 }
@@ -222,28 +222,28 @@ function AdminSection({
   actions: string[];
 }) {
   const icons = {
-    users: <UsersFourIcon className="h-6 w-6 text-gray-600" weight="duotone" />,
-    settings: <GearIcon className="h-6 w-6 text-gray-600" weight="duotone" />,
-    chart: <ChartBarIcon className="h-6 w-6 text-gray-600" weight="duotone" />,
-    shield: <ShieldCheckIcon className="h-6 w-6 text-gray-600" weight="duotone" />,
+    users: <UsersFourIcon className="h-6 w-6 text-muted-foreground" weight="duotone" />,
+    settings: <GearIcon className="h-6 w-6 text-muted-foreground" weight="duotone" />,
+    chart: <ChartBarIcon className="h-6 w-6 text-muted-foreground" weight="duotone" />,
+    shield: <ShieldCheckIcon className="h-6 w-6 text-muted-foreground" weight="duotone" />,
   };
 
   return (
-    <div className="rounded-lg bg-white p-6 shadow-sm border border-gray-200">
+    <div className="rounded-lg bg-card p-6 shadow-sm border border-border">
       <div className="flex items-start gap-4">
-        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gray-100">
+        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-muted">
           {icons[icon]}
         </div>
         <div className="flex-1">
-          <h3 className="text-lg font-semibold text-gray-900 mb-1">{title}</h3>
-          <p className="text-sm text-gray-600 mb-4">{description}</p>
+          <h3 className="text-lg font-semibold text-card-foreground mb-1">{title}</h3>
+          <p className="text-sm text-muted-foreground mb-4">{description}</p>
           <ul className="space-y-2">
             {actions.map((action, index) => (
               <li
                 key={index}
-                className="flex items-center gap-2 text-sm text-gray-700"
+                className="flex items-center gap-2 text-sm text-foreground"
               >
-                <CaretRightIcon className="h-4 w-4 text-gray-400" weight="bold" />
+                <CaretRightIcon className="h-4 w-4 text-muted-foreground" weight="bold" />
                 {action}
               </li>
             ))}

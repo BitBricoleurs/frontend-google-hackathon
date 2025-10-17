@@ -15,8 +15,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Emergency Response System - AI-Assisted 911/15",
+  title: "Urgentis",
   description: "AI-powered emergency response system for 911/15 call operators",
+  icons: {
+    icon: "/logo.svg",
+  },
 };
 
 export default function RootLayout({
