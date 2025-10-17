@@ -1,10 +1,9 @@
 "use client";
 
-import { useAuth } from "@/contexts/auth-context";
-import Link from "next/link";
+import { useQueue } from "@/contexts/queue-context";
+import { useEffect } from "react";
 import {
   Phone as PhoneIcon,
-  Lock as LockIcon,
   Clock as ClockIcon,
   Cpu as CpuIcon,
   CheckCircle as CheckCircleIcon,
@@ -12,7 +11,16 @@ import {
 } from "@phosphor-icons/react/dist/ssr";
 
 export default function DashboardPage() {
-  const { responder, logout } = useAuth();
+  const { calls, stats, updateWaitTimes } = useQueue();
+
+  // Update wait times every second
+  useEffect(() => {
+    const interval = setInterval(() => {
+      updateWaitTimes();
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [updateWaitTimes]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -20,17 +28,27 @@ export default function DashboardPage() {
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Stats Overview */}
         <div className="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard title="Active Calls" value="3" icon="phone" color="blue" />
+          <StatCard
+            title="Active Calls"
+            value={stats?.aiConnected.toString() || "0"}
+            icon="phone"
+            color="blue"
+          />
           <StatCard
             title="Waiting Queue"
-            value="8"
+            value={calls.length.toString()}
             icon="clock"
             color="yellow"
           />
-          <StatCard title="AI Processing" value="5" icon="cpu" color="purple" />
           <StatCard
-            title="Completed Today"
-            value="24"
+            title="AI Processing"
+            value={((stats?.aiConnected || 0) + (stats?.aiConnecting || 0)).toString()}
+            icon="cpu"
+            color="purple"
+          />
+          <StatCard
+            title="High Priority"
+            value={stats?.highPriority.toString() || "0"}
             icon="check"
             color="green"
           />

@@ -2,22 +2,28 @@
 
 import { useState } from "react";
 import {
-  PhoneCall,
-  PhoneX,
-  Microphone,
-  MicrophoneSlash,
-  SpeakerHigh,
-  SpeakerSimpleSlash,
-  WarningCircle,
-  HeartStraight,
-  MapPin,
-  Clock,
-  UserCircle,
-  Brain,
-  Translate,
-  Record,
+  PhoneCallIcon,
+  PhoneXIcon,
+  MicrophoneIcon,
+  MicrophoneSlashIcon,
+  SpeakerHighIcon,
+  SpeakerSimpleSlashIcon,
+  WarningCircleIcon,
+  HeartStraightIcon,
+  MapPinIcon,
+  ClockIcon,
+  UserCircleIcon,
+  BrainIcon,
+  TranslateIcon,
+  RecordIcon,
 } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
+
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable";
 
 // Mock call data
 const mockCallData = {
@@ -72,21 +78,21 @@ const mockTranscript = [
 const aiInsights = [
   {
     type: "medical",
-    icon: HeartStraight,
+    icon: HeartStraightIcon,
     title: "Medical Keywords Detected",
     details: ["collapsed", "not breathing", "not responding"],
     severity: "critical",
   },
   {
     type: "emotion",
-    icon: WarningCircle,
+    icon: WarningCircleIcon,
     title: "Emotional State Analysis",
     details: ["High distress detected", "Panic indicators present"],
     severity: "high",
   },
   {
     type: "location",
-    icon: MapPin,
+    icon: MapPinIcon,
     title: "Location Confirmed",
     details: ["123 Main Street, Apt 4B", "Coordinates: 40.7128°N, 74.0060°W"],
     severity: "info",
@@ -106,7 +112,7 @@ export default function ActiveCallPage() {
             <div className="relative flex h-12 w-12 items-center justify-center">
               <div className="absolute inset-0 animate-ping rounded-full bg-red-500 opacity-75" />
               <div className="relative flex h-12 w-12 items-center justify-center rounded-full bg-red-500">
-                <PhoneCall className="h-6 w-6 text-white" weight="fill" />
+                <PhoneCallIcon className="h-6 w-6 text-white" weight="fill" />
               </div>
             </div>
             <div>
@@ -121,7 +127,7 @@ export default function ActiveCallPage() {
 
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-              <Clock className="h-4 w-4" weight="bold" />
+              <ClockIcon className="h-4 w-4" weight="bold" />
               <span>{mockCallData.duration}</span>
             </div>
             <span className="px-3 py-1 rounded-full text-xs font-medium bg-red-500/10 text-red-500 border border-red-500/20">
@@ -133,124 +139,147 @@ export default function ActiveCallPage() {
 
       {/* Main Content */}
       <div className="flex-1 overflow-hidden">
-        <div className="grid h-full grid-cols-3">
-          {/* Left Column - Call Transcript */}
-          <div className="col-span-2 flex flex-col border-r border-border">
-            {/* Transcript Header */}
-            <div className="border-b border-border bg-card px-6 py-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Record className="h-5 w-5 text-red-500 animate-pulse" weight="fill" />
-                  <span className="text-sm font-medium text-foreground">
-                    Live Transcript
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Translate className="h-4 w-4 text-muted-foreground" weight="duotone" />
-                  <span className="text-xs text-muted-foreground">
-                    Auto-translating from Spanish
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Transcript Messages */}
-            <div className="flex-1 overflow-auto p-6 space-y-4">
-              {mockTranscript.map((message) => (
-                <TranscriptMessage key={message.id} message={message} />
-              ))}
-            </div>
-
-            {/* Call Controls */}
-            <div className="border-t border-border bg-card px-6 py-4">
-              <div className="flex items-center justify-center gap-4">
-                <button
-                  onClick={() => setIsMuted(!isMuted)}
-                  className={cn(
-                    "flex h-12 w-12 items-center justify-center rounded-full transition-colors",
-                    isMuted
-                      ? "bg-red-500 text-white hover:bg-red-600"
-                      : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                  )}
-                >
-                  {isMuted ? (
-                    <MicrophoneSlash className="h-6 w-6" weight="fill" />
-                  ) : (
-                    <Microphone className="h-6 w-6" weight="fill" />
-                  )}
-                </button>
-
-                <button className="flex h-16 w-16 items-center justify-center rounded-full bg-red-500 text-white hover:bg-red-600 transition-colors shadow-lg">
-                  <PhoneX className="h-8 w-8" weight="fill" />
-                </button>
-
-                <button
-                  onClick={() => setIsSpeakerOn(!isSpeakerOn)}
-                  className={cn(
-                    "flex h-12 w-12 items-center justify-center rounded-full transition-colors",
-                    isSpeakerOn
-                      ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                      : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                  )}
-                >
-                  {isSpeakerOn ? (
-                    <SpeakerHigh className="h-6 w-6" weight="fill" />
-                  ) : (
-                    <SpeakerSimpleSlash className="h-6 w-6" weight="fill" />
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column - AI Insights */}
-          <div className="flex flex-col bg-muted/30">
-            {/* AI Header */}
-            <div className="border-b border-border bg-card px-6 py-3">
-              <div className="flex items-center gap-2">
-                <Brain className="h-5 w-5 text-primary" weight="duotone" />
-                <span className="text-sm font-medium text-foreground">
-                  AI Insights
-                </span>
-              </div>
-            </div>
-
-            {/* Insights List */}
-            <div className="flex-1 overflow-auto p-4 space-y-4">
-              {aiInsights.map((insight, index) => (
-                <InsightCard key={index} insight={insight} />
-              ))}
-
-              {/* Caller Info Card */}
-              <div className="rounded-lg border border-border bg-card p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <UserCircle className="h-5 w-5 text-primary" weight="duotone" />
-                  <span className="text-sm font-medium text-foreground">
-                    Caller Information
-                  </span>
-                </div>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Phone:</span>
-                    <span className="text-foreground font-medium">
-                      {mockCallData.callerId}
+        <ResizablePanelGroup direction="horizontal" className="h-full">
+          <ResizablePanel defaultSize={66} minSize={30}>
+            {/* Left Column - Call Transcript */}
+            <div className="flex h-full flex-col ">
+              {/* Transcript Header */}
+              <div className="border-b border-border bg-card px-6 py-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <RecordIcon
+                      className="h-5 w-5 text-red-500 animate-pulse"
+                      weight="fill"
+                    />
+                    <span className="text-sm font-medium text-foreground">
+                      Live Transcript
                     </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Location:</span>
-                    <span className="text-foreground font-medium">
-                      Downtown
+                  <div className="flex items-center gap-2">
+                    <TranslateIcon
+                      className="h-4 w-4 text-muted-foreground"
+                      weight="duotone"
+                    />
+                    <span className="text-xs text-muted-foreground">
+                      Auto-translating from Spanish
                     </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Previous Calls:</span>
-                    <span className="text-foreground font-medium">0</span>
+                </div>
+              </div>
+
+              {/* Transcript Messages */}
+              <div className="flex-1 overflow-auto p-6 space-y-4">
+                {mockTranscript.map((message) => (
+                  <TranscriptMessage key={message.id} message={message} />
+                ))}
+              </div>
+
+              {/* Call Controls */}
+              <div className="border-t border-border bg-card px-6 py-4">
+                <div className="flex items-center justify-center gap-4">
+                  <button
+                    onClick={() => setIsMuted(!isMuted)}
+                    className={cn(
+                      "flex h-12 w-12 items-center justify-center rounded-full transition-colors",
+                      isMuted
+                        ? "bg-red-500 text-white hover:bg-red-600"
+                        : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                    )}
+                  >
+                    {isMuted ? (
+                      <MicrophoneSlashIcon className="h-6 w-6" weight="fill" />
+                    ) : (
+                      <MicrophoneIcon className="h-6 w-6" weight="fill" />
+                    )}
+                  </button>
+
+                  <button className="flex h-16 w-16 items-center justify-center rounded-full bg-red-500 text-white hover:bg-red-600 transition-colors shadow-lg">
+                    <PhoneXIcon className="h-8 w-8" weight="fill" />
+                  </button>
+
+                  <button
+                    onClick={() => setIsSpeakerOn(!isSpeakerOn)}
+                    className={cn(
+                      "flex h-12 w-12 items-center justify-center rounded-full transition-colors",
+                      isSpeakerOn
+                        ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                        : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                    )}
+                  >
+                    {isSpeakerOn ? (
+                      <SpeakerHighIcon className="h-6 w-6" weight="fill" />
+                    ) : (
+                      <SpeakerSimpleSlashIcon
+                        className="h-6 w-6"
+                        weight="fill"
+                      />
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </ResizablePanel>
+
+          <ResizableHandle withHandle />
+
+          <ResizablePanel defaultSize={34} minSize={20}>
+            {/* Right Column - AI Insights */}
+            <div className="flex h-full flex-col bg-muted/30">
+              {/* AI Header */}
+              <div className="border-b border-border bg-card px-6 py-3">
+                <div className="flex items-center gap-2">
+                  <BrainIcon
+                    className="h-5 w-5 text-primary"
+                    weight="duotone"
+                  />
+                  <span className="text-sm font-medium text-foreground">
+                    AI Insights
+                  </span>
+                </div>
+              </div>
+
+              {/* Insights List */}
+              <div className="flex-1 overflow-auto p-4 space-y-4">
+                {aiInsights.map((insight, index) => (
+                  <InsightCard key={index} insight={insight} />
+                ))}
+
+                {/* Caller Info Card */}
+                <div className="rounded-lg border border-border bg-card p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <UserCircleIcon
+                      className="h-5 w-5 text-primary"
+                      weight="duotone"
+                    />
+                    <span className="text-sm font-medium text-foreground">
+                      Caller Information
+                    </span>
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Phone:</span>
+                      <span className="text-foreground font-medium">
+                        {mockCallData.callerId}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Location:</span>
+                      <span className="text-foreground font-medium">
+                        Downtown
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">
+                        Previous Calls:
+                      </span>
+                      <span className="text-foreground font-medium">0</span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
+          </ResizablePanel>
+        </ResizablePanelGroup>
       </div>
     </div>
   );
@@ -270,35 +299,43 @@ function TranscriptMessage({
   };
 
   return (
-    <div
-      className={cn(
-        "flex gap-3",
-        isAI ? "flex-row" : "flex-row-reverse"
-      )}
-    >
+    <div className={cn("flex gap-3", isAI ? "flex-row" : "flex-row-reverse")}>
       <div
         className={cn(
           "flex h-8 w-8 items-center justify-center rounded-full shrink-0",
-          isAI ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"
+          isAI
+            ? "bg-primary text-primary-foreground"
+            : "bg-secondary text-secondary-foreground"
         )}
       >
         {isAI ? (
-          <Brain className="h-5 w-5" weight="fill" />
+          <BrainIcon className="h-5 w-5" weight="fill" />
         ) : (
-          <UserCircle className="h-5 w-5" weight="fill" />
+          <UserCircleIcon className="h-5 w-5" weight="fill" />
         )}
       </div>
 
-      <div className={cn("flex flex-col gap-1", isAI ? "items-start" : "items-end", "flex-1")}>
+      <div
+        className={cn(
+          "flex flex-col gap-1",
+          isAI ? "items-start" : "items-end",
+          "flex-1"
+        )}
+      >
         <div className="flex items-center gap-2">
           <span className="text-xs font-medium text-foreground">
-            {isAI ? "AI Agent" : "Caller"}
+            {isAI ? "Gaia" : "Caller"}
           </span>
           <span className="text-xs text-muted-foreground">
             {message.timestamp}
           </span>
           {!isAI && (
-            <span className={cn("text-xs font-medium", emotionColors[message.emotion as keyof typeof emotionColors])}>
+            <span
+              className={cn(
+                "text-xs font-medium",
+                emotionColors[message.emotion as keyof typeof emotionColors]
+              )}
+            >
               {message.emotion}
             </span>
           )}
@@ -318,11 +355,7 @@ function TranscriptMessage({
   );
 }
 
-function InsightCard({
-  insight,
-}: {
-  insight: (typeof aiInsights)[0];
-}) {
+function InsightCard({ insight }: { insight: (typeof aiInsights)[0] }) {
   const severityColors = {
     critical: "border-red-500/20 bg-red-500/5",
     high: "border-yellow-500/20 bg-yellow-500/5",
@@ -335,7 +368,7 @@ function InsightCard({
     info: "text-blue-500",
   };
 
-  const Icon = insight.icon;
+  const IconIcon = insight.icon;
 
   return (
     <div
@@ -345,10 +378,12 @@ function InsightCard({
       )}
     >
       <div className="flex items-center gap-2 mb-2">
-        <Icon
+        <IconIcon
           className={cn(
             "h-5 w-5",
-            severityIconColors[insight.severity as keyof typeof severityIconColors]
+            severityIconColors[
+              insight.severity as keyof typeof severityIconColors
+            ]
           )}
           weight="duotone"
         />
