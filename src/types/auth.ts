@@ -1,17 +1,22 @@
+// Responder/Emergency operator authentication
 interface LoginRequest {
-  email: string;
+  responderId: string; // Emergency responder ID
   password: string;
 }
 
 interface LoginResponse {
   access_token: string;
   refresh_token: string;
+  responder: ResponderProfile;
 }
 
-interface RegisterRequest {
-  email: string;
-  password: string;
+interface ResponderProfile {
+  id: string;
+  responderId: string;
   name: string;
+  role: "responder" | "supervisor" | "admin";
+  department: string;
+  shift?: string;
 }
 
 interface TokenData {
@@ -32,7 +37,7 @@ interface RefreshTokenResponse {
 export type {
   LoginRequest,
   LoginResponse,
-  RegisterRequest,
+  ResponderProfile,
   TokenData,
   RefreshTokenResponse,
 };
