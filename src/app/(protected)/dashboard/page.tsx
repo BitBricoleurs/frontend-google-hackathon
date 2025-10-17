@@ -15,20 +15,20 @@ export default function DashboardPage() {
   const { responder, logout } = useAuth();
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
+      <header className="bg-card shadow-sm border-b border-border">
         <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600">
-                <PhoneIcon className="h-6 w-6 text-white" weight="fill" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
+                <PhoneIcon className="h-6 w-6 text-primary-foreground" weight="fill" />
               </div>
               <div>
-                <h1 className="text-xl font-semibold text-gray-900">
+                <h1 className="text-xl font-semibold text-card-foreground">
                   Emergency Response Dashboard
                 </h1>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-muted-foreground">
                   AI-Assisted Call Management
                 </p>
               </div>
@@ -39,7 +39,7 @@ export default function DashboardPage() {
               {responder?.role === "admin" && (
                 <Link
                   href="/admin"
-                  className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 transition-colors flex items-center gap-2"
+                  className="rounded-lg bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:opacity-90 transition-opacity flex items-center gap-2"
                 >
                   <LockIcon className="h-4 w-4" weight="bold" />
                   Admin Panel
@@ -47,16 +47,16 @@ export default function DashboardPage() {
               )}
 
               <div className="text-right">
-                <p className="text-sm font-medium text-gray-900">
+                <p className="text-sm font-medium text-card-foreground">
                   {responder?.name}
                 </p>
-                <p className="text-xs text-gray-600">
+                <p className="text-xs text-muted-foreground">
                   {responder?.responderId} • {responder?.role}
                 </p>
               </div>
               <button
                 onClick={logout}
-                className="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 transition-colors"
+                className="rounded-lg bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground hover:opacity-90 transition-opacity"
               >
                 Sign Out
               </button>
@@ -86,20 +86,20 @@ export default function DashboardPage() {
         </div>
 
         {/* Placeholder for future features */}
-        <div className="rounded-lg bg-white p-8 shadow-sm border border-gray-200">
+        <div className="rounded-lg bg-card p-8 shadow-sm border border-border">
           <div className="text-center">
             <div className="mb-4 flex justify-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-50">
+              <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-accent">
                 <LightningIcon
-                  className="h-8 w-8 text-blue-600"
+                  className="h-8 w-8 text-accent-foreground"
                   weight="fill"
                 />
               </div>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            <h2 className="text-2xl font-bold text-card-foreground mb-2">
               Dashboard Coming Soon
             </h2>
-            <p className="text-gray-600 mb-6">
+            <p className="text-muted-foreground mb-6">
               Your emergency response dashboard will display real-time call
               data, AI agent conversations, and patient files.
             </p>
@@ -130,10 +130,10 @@ function StatCard({
   color: "blue" | "yellow" | "purple" | "green";
 }) {
   const colorClasses = {
-    blue: "bg-blue-50 text-blue-600",
-    yellow: "bg-yellow-50 text-yellow-600",
-    purple: "bg-purple-50 text-purple-600",
-    green: "bg-green-50 text-green-600",
+    blue: "bg-chart-1/10 text-chart-1",
+    yellow: "bg-chart-4/10 text-chart-4",
+    purple: "bg-chart-3/10 text-chart-3",
+    green: "bg-primary/10 text-primary",
   };
 
   const icons = {
@@ -144,13 +144,13 @@ function StatCard({
   };
 
   return (
-    <div className="rounded-lg bg-white p-6 shadow-sm border border-gray-200">
+    <div className="rounded-lg bg-card p-6 shadow-sm border border-border">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-medium text-gray-600">{title}</p>
-          <p className="mt-2 text-3xl font-bold text-gray-900">{value}</p>
+          <p className="text-sm font-medium text-muted-foreground">{title}</p>
+          <p className="mt-2 text-3xl font-bold text-card-foreground">{value}</p>
         </div>
-        <div className={`rounded-full p-3 ${colorClasses[color]}`}>
+        <div className={`rounded-lg p-3 ${colorClasses[color]}`}>
           {icons[icon]}
         </div>
       </div>
@@ -161,8 +161,8 @@ function StatCard({
 function FeatureItem({ text }: { text: string }) {
   return (
     <div className="flex items-center gap-2">
-      <CheckCircleIcon className="h-5 w-5 text-green-600" weight="fill" />
-      <span className="text-sm text-gray-700">{text}</span>
+      <CheckCircleIcon className="h-5 w-5 text-primary" weight="fill" />
+      <span className="text-sm text-muted-foreground">{text}</span>
     </div>
   );
 }
