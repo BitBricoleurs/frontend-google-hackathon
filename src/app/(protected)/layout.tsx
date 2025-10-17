@@ -25,6 +25,12 @@ function ProtectedLayoutContent({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const handleTakeCall = (callId: string) => {
+    console.log("Taking call:", callId);
+    // TODO: Implement navigation to active call page or handle taking the call
+    // For example: router.push(`/active-call?callId=${callId}`)
+  };
+
   return (
     <div className="flex h-screen w-full overflow-hidden">
       {/* Fixed Sidebar */}
@@ -50,7 +56,7 @@ function ProtectedLayoutContent({ children }: { children: React.ReactNode }) {
               onCollapse={() => setIsQueueCollapsed(true)}
               onExpand={() => setIsQueueCollapsed(false)}
             >
-              <FloatingQueue calls={calls} panelRef={queuePanelRef} />
+              <FloatingQueue calls={calls} panelRef={queuePanelRef} onTakeCall={handleTakeCall} />
             </ResizablePanel>
           </ResizablePanelGroup>
 

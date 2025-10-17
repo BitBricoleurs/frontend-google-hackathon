@@ -9,6 +9,8 @@ const MOCK_CALLS: QueueCall[] = [
     waitTime: 125,
     aiStatus: "connected",
     priority: "high",
+    keywords: ["chest pain", "breathing difficulty", "unconscious"],
+    emotionalState: "panic",
   },
   {
     id: "call-2",
@@ -17,6 +19,8 @@ const MOCK_CALLS: QueueCall[] = [
     waitTime: 85,
     aiStatus: "connected",
     priority: "medium",
+    keywords: ["accident", "bleeding", "leg injury"],
+    emotionalState: "distress",
   },
   {
     id: "call-3",
@@ -24,6 +28,9 @@ const MOCK_CALLS: QueueCall[] = [
     phoneNumber: "+33 1 55 44 33 22",
     waitTime: 45,
     aiStatus: "connecting",
+    priority: "low",
+    keywords: ["fever", "nausea"],
+    emotionalState: "anxious",
   },
   {
     id: "call-4",
@@ -32,6 +39,8 @@ const MOCK_CALLS: QueueCall[] = [
     waitTime: 20,
     aiStatus: "pending",
     priority: "low",
+    keywords: ["minor cut", "first aid"],
+    emotionalState: "calm",
   },
   {
     id: "call-5",
@@ -40,6 +49,8 @@ const MOCK_CALLS: QueueCall[] = [
     waitTime: 180,
     aiStatus: "connected",
     priority: "high",
+    keywords: ["heart attack", "collapsed", "not responding"],
+    emotionalState: "panic",
   },
 ];
 

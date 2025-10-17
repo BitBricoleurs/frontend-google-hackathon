@@ -1,7 +1,8 @@
 "use client";
 
-import { Phone, Robot, Clock, CaretRightIcon } from "@phosphor-icons/react";
+import { Phone, CaretRightIcon, ClockIcon } from "@phosphor-icons/react";
 import * as ResizablePrimitive from "react-resizable-panels";
+import { QueuedCall } from "./queued-call";
 
 export interface QueueCall {
   id: string;
@@ -9,89 +10,74 @@ export interface QueueCall {
   phoneNumber: string;
   waitTime: number; // in seconds
   aiStatus: "connected" | "connecting" | "pending";
-  priority?: "high" | "medium" | "low";
+  priority: "high" | "medium" | "low";
+  keywords: string[];
+  emotionalState: "calm" | "distress" | "panic" | "anxious";
 }
 
 interface FloatingQueueProps {
   calls?: QueueCall[];
   panelRef?: React.RefObject<ResizablePrimitive.ImperativePanelHandle | null>;
+  onTakeCall?: (callId: string) => void;
 }
 
-export function FloatingQueue({ calls = [], panelRef }: FloatingQueueProps) {
+export function FloatingQueue({
+  calls = [],
+  panelRef,
+  onTakeCall,
+}: FloatingQueueProps) {
   const handleCollapse = () => {
     if (panelRef?.current) {
       panelRef.current.collapse();
     }
   };
-  const formatWaitTime = (seconds: number): string => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
-  };
 
-  const getPriorityColor = (priority?: string) => {
-    switch (priority) {
-      case "high":
-        return "border-red-500 bg-red-500/10";
-      case "medium":
-        return "border-yellow-500 bg-yellow-500/10";
-      case "low":
-        return "border-green-500 bg-green-500/10";
-      default:
-        return "border-border bg-card";
-    }
-  };
+  const calculateAverageWaitTime = () => {
+    if (calls.length === 0) return "0m 0s";
 
-  const getAiStatusIcon = (status: string) => {
-    switch (status) {
-      case "connected":
-        return (
-          <div className="flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400">
-            <Robot weight="fill" className="h-4 w-4" />
-            <span>Gaia Connected</span>
-          </div>
-        );
-      case "connecting":
-        return (
-          <div className="flex items-center gap-1.5 text-xs text-yellow-600 dark:text-yellow-400">
-            <Robot weight="duotone" className="h-4 w-4 animate-pulse" />
-            <span>Connecting...</span>
-          </div>
-        );
-      case "pending":
-        return (
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Clock weight="duotone" className="h-4 w-4" />
-            <span>In Queue</span>
-          </div>
-        );
-    }
+    const totalWaitTime = calls.reduce((sum, call) => sum + call.waitTime, 0);
+    const averageSeconds = Math.floor(totalWaitTime / calls.length);
+    const minutes = Math.floor(averageSeconds / 60);
+    const seconds = averageSeconds % 60;
+
+    return `${minutes}m ${seconds}s`;
   };
 
   return (
     <div className="flex h-full flex-col bg-card">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-border bg-muted/50 px-4 py-3">
-        <div className="flex items-center gap-2">
-          <Phone weight="duotone" className="h-5 w-5 text-primary" />
-          <h2 className="font-semibold text-sm text-foreground">
-            Waiting Queue
-          </h2>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 rounded-full bg-primary px-2.5 py-1">
-            <span className="text-xs font-bold text-primary-foreground">
-              {calls.length}
-            </span>
+      <div className="border-b border-border bg-card px-6 py-4">
+        <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center gap-2">
+            <Phone weight="duotone" className="h-5 w-5 text-primary" />
+            <h2 className="font-semibold text-sm text-foreground">
+              Waiting Queue
+            </h2>
           </div>
-          <button
-            onClick={handleCollapse}
-            className="flex h-7 w-7 items-center justify-center rounded-md hover:bg-accent transition-colors"
-            aria-label="Collapse queue"
-          >
-            <CaretRightIcon weight="bold" className="h-4 w-4 text-foreground" />
-          </button>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 rounded-full bg-primary px-2.5 py-1">
+              <span className="text-xs font-bold text-primary-foreground">
+                {calls.length}
+              </span>
+            </div>
+            <button
+              onClick={handleCollapse}
+              className="flex h-7 w-7 items-center justify-center rounded-md hover:bg-accent transition-colors"
+              aria-label="Collapse queue"
+            >
+              <CaretRightIcon
+                weight="bold"
+                className="h-4 w-4 text-foreground"
+              />
+            </button>
+          </div>
         </div>
+        {calls.length > 0 && (
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <ClockIcon weight="regular" className="h-3.5 w-3.5" />
+            <span>Avg. wait time: {calculateAverageWaitTime()}</span>
+          </div>
+        )}
       </div>
 
       {/* Queue List */}
@@ -107,35 +93,18 @@ export function FloatingQueue({ calls = [], panelRef }: FloatingQueueProps) {
         ) : (
           <div className="p-3 space-y-2">
             {calls.map((call) => (
-              <div
+              <QueuedCall
                 key={call.id}
-                className={`rounded-lg border p-3 transition-all hover:shadow-md ${getPriorityColor(
-                  call.priority
-                )}`}
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-medium text-sm text-foreground truncate">
-                      {call.callerName}
-                    </h3>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {call.phoneNumber}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-1 text-xs font-medium text-foreground ml-2">
-                    <Clock weight="duotone" className="h-3.5 w-3.5" />
-                    <span>{formatWaitTime(call.waitTime)}</span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  {getAiStatusIcon(call.aiStatus)}
-                  {call.priority && (
-                    <span className="text-xs font-medium uppercase text-muted-foreground">
-                      {call.priority}
-                    </span>
-                  )}
-                </div>
-              </div>
+                id={call.id}
+                fullName={call.callerName}
+                phoneNumber={call.phoneNumber}
+                priority={call.priority}
+                waitTime={call.waitTime}
+                keywords={call.keywords}
+                emotionalState={call.emotionalState}
+                aiStatus={call.aiStatus}
+                onTakeCall={onTakeCall}
+              />
             ))}
           </div>
         )}
