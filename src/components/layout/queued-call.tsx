@@ -8,30 +8,31 @@ import {
   WarningCircleIcon,
 } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
+import { Call } from "@/types/chat";
 
 export interface QueuedCallProps {
-  id: string;
-  fullName: string;
-  phoneNumber: string;
-  priority: "high" | "medium" | "low";
-  waitTime: number; // in seconds
-  keywords: string[];
-  emotionalState: "calm" | "distress" | "panic" | "anxious";
-  aiStatus: "connected" | "connecting" | "pending";
+  call: Call;
   onTakeCall?: (callId: string) => void;
 }
 
 export function QueuedCall({
-  id,
-  fullName,
-  phoneNumber,
-  priority,
-  waitTime,
-  keywords,
-  emotionalState,
-  aiStatus,
+  call,
   onTakeCall,
 }: QueuedCallProps) {
+  // Extract properties from call object
+  const id = call.id;
+  const fullName = call.caller.name;
+  const phoneNumber = call.caller.phoneNumber;
+  const priority = call.priority;
+  const keywords = call.keywords || [];
+  const emotionalState = call.emotionalState || "calm";
+
+  // Calculate wait time in seconds
+  const waitTimeMs = Date.now() - call.startTime.getTime();
+  const waitTime = Math.floor(waitTimeMs / 1000);
+
+  // Determine AI status based on transcript length and insights
+  const aiStatus = call.transcript.length > 3 ? "connected" : call.aiInsights.length > 0 ? "connecting" : "pending";
   const [isHovered, setIsHovered] = useState(false);
   const formatWaitTime = (seconds: number): string => {
     const minutes = Math.floor(seconds / 60);
@@ -41,6 +42,12 @@ export function QueuedCall({
 
   const getPriorityConfig = (priority: string) => {
     switch (priority) {
+      case "critical":
+        return {
+          bg: "bg-red-500",
+          text: "text-white",
+          label: "Critical",
+        };
       case "high":
         return {
           bg: "bg-orange-500",

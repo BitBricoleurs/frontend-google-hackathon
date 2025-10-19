@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import {
   PhoneCallIcon,
   PhoneXIcon,
@@ -16,6 +15,7 @@ import {
   BrainIcon,
   TranslateIcon,
   RecordIcon,
+  PlusCircleIcon,
 } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 
@@ -24,84 +24,64 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
-
-// Mock call data
-const mockCallData = {
-  callerId: "+1 (555) 789-0123",
-  callerName: "Unknown Caller",
-  duration: "00:03:42",
-  location: "Estimated: Downtown District, Grid A-4",
-  status: "active",
-  priority: "high",
-};
-
-// Mock transcript
-const mockTranscript = [
-  {
-    id: 1,
-    speaker: "caller",
-    text: "Hello? I need help! My father collapsed!",
-    timestamp: "00:00:12",
-    emotion: "distress",
-  },
-  {
-    id: 2,
-    speaker: "ai-agent",
-    text: "I understand you need emergency assistance. Can you tell me your exact location?",
-    timestamp: "00:00:18",
-    emotion: "calm",
-  },
-  {
-    id: 3,
-    speaker: "caller",
-    text: "We're at 123 Main Street, apartment 4B. He's not breathing!",
-    timestamp: "00:00:24",
-    emotion: "panic",
-  },
-  {
-    id: 4,
-    speaker: "ai-agent",
-    text: "Emergency services have been dispatched to 123 Main Street, apartment 4B. Help is on the way. Is your father conscious?",
-    timestamp: "00:00:32",
-    emotion: "calm",
-  },
-  {
-    id: 5,
-    speaker: "caller",
-    text: "No, he's not responding! What should I do?",
-    timestamp: "00:00:38",
-    emotion: "distress",
-  },
-];
-
-// Mock AI insights
-const aiInsights = [
-  {
-    type: "medical",
-    icon: HeartStraightIcon,
-    title: "Medical Keywords Detected",
-    details: ["collapsed", "not breathing", "not responding"],
-    severity: "critical",
-  },
-  {
-    type: "emotion",
-    icon: WarningCircleIcon,
-    title: "Emotional State Analysis",
-    details: ["High distress detected", "Panic indicators present"],
-    severity: "high",
-  },
-  {
-    type: "location",
-    icon: MapPinIcon,
-    title: "Location Confirmed",
-    details: ["123 Main Street, Apt 4B", "Coordinates: 40.7128°N, 74.0060°W"],
-    severity: "info",
-  },
-];
+import { useChat } from "@/contexts/chat-context";
+import { useAutoScroll } from "@/hooks/use-auto-scroll";
+import type { ChatMessage, AIInsight } from "@/types/chat";
 
 export default function ActiveCallPage() {
-  const [isMuted, setIsMuted] = useState(false);
-  const [isSpeakerOn, setIsSpeakerOn] = useState(true);
+  return <ActiveCallContent />;
+}
+
+function ActiveCallContent() {
+  const {
+    activeCall,
+    isMuted,
+    isSpeakerOn,
+    toggleMute,
+    toggleSpeaker,
+    addMessage,
+    endCall,
+    selectCall,
+  } = useChat();
+
+  const scrollRef = useAutoScroll<HTMLDivElement>([activeCall?.transcript]);
+
+  // Demo function to test adding messages
+  const addDemoMessage = () => {
+    const demoMessages = [
+      { text: "I'm feeling better now, thank you!", speaker: "caller" as const, emotion: "calm" as const },
+      { text: "That's great to hear. Emergency services should arrive soon.", speaker: "ai-agent" as const, emotion: "calm" as const },
+      { text: "Can you stay with him until they arrive?", speaker: "ai-agent" as const, emotion: "calm" as const },
+      { text: "Yes, I will stay right here!", speaker: "caller" as const, emotion: "neutral" as const },
+    ];
+
+    const randomMessage = demoMessages[Math.floor(Math.random() * demoMessages.length)];
+    addMessage(randomMessage.text, randomMessage.speaker, randomMessage.emotion);
+  };
+
+  // If no active call, show call selection interface
+  if (!activeCall) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <div className="text-center">
+          <PhoneCallIcon className="h-16 w-16 text-muted-foreground mx-auto mb-4" weight="duotone" />
+          <h2 className="text-xl font-semibold text-foreground mb-2">No Active Call</h2>
+          <p className="text-sm text-muted-foreground mb-6">
+            Select a call from the waiting queue to begin
+          </p>
+          <button
+            onClick={() => selectCall("call-002")}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+          >
+            Load Demo Call (Fire Emergency)
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const messages = activeCall.transcript;
+  const insights = activeCall.aiInsights;
 
   return (
     <div className="flex h-full flex-col">
@@ -120,7 +100,7 @@ export default function ActiveCallPage() {
                 Active Emergency Call
               </h1>
               <p className="text-sm text-muted-foreground">
-                {mockCallData.callerName} • {mockCallData.callerId}
+                {activeCall.caller.name} • {activeCall.caller.phoneNumber}
               </p>
             </div>
           </div>
@@ -128,10 +108,16 @@ export default function ActiveCallPage() {
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 text-sm font-medium text-foreground">
               <ClockIcon className="h-4 w-4" weight="bold" />
-              <span>{mockCallData.duration}</span>
+              <span>{activeCall.duration}</span>
             </div>
-            <span className="px-3 py-1 rounded-full text-xs font-medium bg-red-500/10 text-red-500 border border-red-500/20">
-              HIGH PRIORITY
+            <span className={cn(
+              "px-3 py-1 rounded-full text-xs font-medium border",
+              activeCall.priority === "critical" && "bg-red-500/10 text-red-500 border-red-500/20",
+              activeCall.priority === "high" && "bg-orange-500/10 text-orange-500 border-orange-500/20",
+              activeCall.priority === "medium" && "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
+              activeCall.priority === "low" && "bg-blue-500/10 text-blue-500 border-blue-500/20"
+            )}>
+              {activeCall.priority.toUpperCase()} PRIORITY
             </span>
           </div>
         </div>
@@ -154,22 +140,35 @@ export default function ActiveCallPage() {
                     <span className="text-sm font-medium text-foreground">
                       Live Transcript
                     </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <TranslateIcon
-                      className="h-4 w-4 text-muted-foreground"
-                      weight="duotone"
-                    />
                     <span className="text-xs text-muted-foreground">
-                      Auto-translating from Spanish
+                      ({messages.length} messages)
                     </span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={addDemoMessage}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary/10 hover:bg-primary/20 text-primary text-xs font-medium transition-colors"
+                      title="Add demo message (for testing)"
+                    >
+                      <PlusCircleIcon className="h-4 w-4" weight="fill" />
+                      Add Message
+                    </button>
+                    <div className="flex items-center gap-2">
+                      <TranslateIcon
+                        className="h-4 w-4 text-muted-foreground"
+                        weight="duotone"
+                      />
+                      <span className="text-xs text-muted-foreground">
+                        Auto-translating from Spanish
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
 
               {/* Transcript Messages */}
-              <div className="flex-1 overflow-auto p-6 space-y-4">
-                {mockTranscript.map((message) => (
+              <div ref={scrollRef} className="flex-1 overflow-auto p-6 space-y-4">
+                {messages.map((message) => (
                   <TranscriptMessage key={message.id} message={message} />
                 ))}
               </div>
@@ -178,13 +177,14 @@ export default function ActiveCallPage() {
               <div className="border-t border-border bg-card px-6 py-4">
                 <div className="flex items-center justify-center gap-4">
                   <button
-                    onClick={() => setIsMuted(!isMuted)}
+                    onClick={toggleMute}
                     className={cn(
                       "flex h-12 w-12 items-center justify-center rounded-full transition-colors",
                       isMuted
                         ? "bg-red-500 text-white hover:bg-red-600"
                         : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
                     )}
+                    title={isMuted ? "Unmute" : "Mute"}
                   >
                     {isMuted ? (
                       <MicrophoneSlashIcon className="h-6 w-6" weight="fill" />
@@ -193,18 +193,23 @@ export default function ActiveCallPage() {
                     )}
                   </button>
 
-                  <button className="flex h-16 w-16 items-center justify-center rounded-full bg-red-500 text-white hover:bg-red-600 transition-colors shadow-lg">
+                  <button
+                    onClick={endCall}
+                    className="flex h-16 w-16 items-center justify-center rounded-full bg-red-500 text-white hover:bg-red-600 transition-colors shadow-lg"
+                    title="End Call"
+                  >
                     <PhoneXIcon className="h-8 w-8" weight="fill" />
                   </button>
 
                   <button
-                    onClick={() => setIsSpeakerOn(!isSpeakerOn)}
+                    onClick={toggleSpeaker}
                     className={cn(
                       "flex h-12 w-12 items-center justify-center rounded-full transition-colors",
                       isSpeakerOn
                         ? "bg-primary text-primary-foreground hover:bg-primary/90"
                         : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
                     )}
+                    title={isSpeakerOn ? "Speaker On" : "Speaker Off"}
                   >
                     {isSpeakerOn ? (
                       <SpeakerHighIcon className="h-6 w-6" weight="fill" />
@@ -240,8 +245,8 @@ export default function ActiveCallPage() {
 
               {/* Insights List */}
               <div className="flex-1 overflow-auto p-4 space-y-4">
-                {aiInsights.map((insight, index) => (
-                  <InsightCard key={index} insight={insight} />
+                {insights.map((insight) => (
+                  <InsightCard key={insight.id} insight={insight} />
                 ))}
 
                 {/* Caller Info Card */}
@@ -259,21 +264,31 @@ export default function ActiveCallPage() {
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Phone:</span>
                       <span className="text-foreground font-medium">
-                        {mockCallData.callerId}
+                        {activeCall.caller.phoneNumber}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Location:</span>
                       <span className="text-foreground font-medium">
-                        Downtown
+                        {activeCall.caller.location || "Unknown"}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">
                         Previous Calls:
                       </span>
-                      <span className="text-foreground font-medium">0</span>
+                      <span className="text-foreground font-medium">
+                        {activeCall.caller.previousCalls}
+                      </span>
                     </div>
+                    {activeCall.caller.language && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Language:</span>
+                        <span className="text-foreground font-medium">
+                          {activeCall.caller.language}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -288,7 +303,7 @@ export default function ActiveCallPage() {
 function TranscriptMessage({
   message,
 }: {
-  message: (typeof mockTranscript)[0];
+  message: ChatMessage;
 }) {
   const isAI = message.speaker === "ai-agent";
 
@@ -296,6 +311,7 @@ function TranscriptMessage({
     calm: "text-green-500",
     distress: "text-yellow-500",
     panic: "text-red-500",
+    neutral: "text-blue-500",
   };
 
   return (
@@ -355,7 +371,7 @@ function TranscriptMessage({
   );
 }
 
-function InsightCard({ insight }: { insight: (typeof aiInsights)[0] }) {
+function InsightCard({ insight }: { insight: AIInsight }) {
   const severityColors = {
     critical: "border-red-500/20 bg-red-500/5",
     high: "border-yellow-500/20 bg-yellow-500/5",
@@ -368,22 +384,28 @@ function InsightCard({ insight }: { insight: (typeof aiInsights)[0] }) {
     info: "text-blue-500",
   };
 
-  const IconIcon = insight.icon;
+  // Map insight types to icons
+  const insightIcons = {
+    medical: HeartStraightIcon,
+    emotion: WarningCircleIcon,
+    location: MapPinIcon,
+    general: BrainIcon,
+  };
+
+  const IconComponent = insightIcons[insight.type];
 
   return (
     <div
       className={cn(
         "rounded-lg border p-4",
-        severityColors[insight.severity as keyof typeof severityColors]
+        severityColors[insight.severity]
       )}
     >
       <div className="flex items-center gap-2 mb-2">
-        <IconIcon
+        <IconComponent
           className={cn(
             "h-5 w-5",
-            severityIconColors[
-              insight.severity as keyof typeof severityIconColors
-            ]
+            severityIconColors[insight.severity]
           )}
           weight="duotone"
         />

@@ -70,7 +70,7 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
 
           <h1 className="text-3xl font-bold text-gray-900 mb-4">Access Denied</h1>
           <p className="text-gray-600 mb-2">
-            You don't have permission to access this page.
+            You don&apos;t have permission to access this page.
           </p>
           <p className="text-sm text-gray-500 mb-8">
             Your role: <span className="font-medium text-gray-700">{responder?.role}</span>

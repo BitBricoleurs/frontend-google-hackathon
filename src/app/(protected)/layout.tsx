@@ -5,7 +5,8 @@ import { ProtectedRoute } from "@/components/auth/protected-route";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { AppHeader } from "@/components/layout/app-header";
 import { FloatingQueue } from "@/components/layout/floating-queue";
-import { QueueProvider, useQueue } from "@/contexts/queue-context";
+import { QueueProvider } from "@/contexts/queue-context";
+import { ChatProvider } from "@/contexts/chat-context";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -15,7 +16,6 @@ import {
 import { CaretLeftIcon } from "@phosphor-icons/react";
 
 function ProtectedLayoutContent({ children }: { children: React.ReactNode }) {
-  const { calls } = useQueue();
   const queuePanelRef = useRef<ImperativePanelHandle>(null);
   const [isQueueCollapsed, setIsQueueCollapsed] = useState(false);
 
@@ -23,12 +23,6 @@ function ProtectedLayoutContent({ children }: { children: React.ReactNode }) {
     if (queuePanelRef.current) {
       queuePanelRef.current.expand();
     }
-  };
-
-  const handleTakeCall = (callId: string) => {
-    console.log("Taking call:", callId);
-    // TODO: Implement navigation to active call page or handle taking the call
-    // For example: router.push(`/active-call?callId=${callId}`)
   };
 
   return (
@@ -56,7 +50,7 @@ function ProtectedLayoutContent({ children }: { children: React.ReactNode }) {
               onCollapse={() => setIsQueueCollapsed(true)}
               onExpand={() => setIsQueueCollapsed(false)}
             >
-              <FloatingQueue calls={calls} panelRef={queuePanelRef} onTakeCall={handleTakeCall} />
+              <FloatingQueue panelRef={queuePanelRef} />
             </ResizablePanel>
           </ResizablePanelGroup>
 
@@ -83,9 +77,11 @@ export default function ProtectedLayout({
 }) {
   return (
     <ProtectedRoute>
-      <QueueProvider>
-        <ProtectedLayoutContent>{children}</ProtectedLayoutContent>
-      </QueueProvider>
+      <ChatProvider>
+        <QueueProvider>
+          <ProtectedLayoutContent>{children}</ProtectedLayoutContent>
+        </QueueProvider>
+      </ChatProvider>
     </ProtectedRoute>
   );
 }

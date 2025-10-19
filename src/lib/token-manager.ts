@@ -28,10 +28,11 @@ export class TokenManager {
     const expiresAt = Date.now() + expiresIn * 1000;
 
     this.tokenData = {
-      accessToken,
-      expiresAt,
-      rememberMe,
-      userId,
+      access_token: accessToken,
+      refresh_token: "",
+      expires_in: expiresIn,
+      token_type: "Bearer",
+      scope: "all",
     };
 
     if (typeof window !== "undefined") {
@@ -65,7 +66,7 @@ export class TokenManager {
     }
 
     if (this.tokenData && this.isTokenValid()) {
-      return this.tokenData.accessToken;
+      return this.tokenData.access_token;
     }
 
     return null;
@@ -73,11 +74,7 @@ export class TokenManager {
 
   // Get stored userId
   getUserId(): number | null {
-    if (!this.tokenData) {
-      this.loadTokens();
-    }
-
-    return this.tokenData?.userId || null;
+    return null; // Not stored in new TokenData format
   }
 
   // Check if access token is valid (not expired)

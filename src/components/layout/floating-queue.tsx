@@ -3,29 +3,27 @@
 import { Phone, CaretRightIcon, ClockIcon } from "@phosphor-icons/react";
 import * as ResizablePrimitive from "react-resizable-panels";
 import { QueuedCall } from "./queued-call";
-
-export interface QueueCall {
-  id: string;
-  callerName: string;
-  phoneNumber: string;
-  waitTime: number; // in seconds
-  aiStatus: "connected" | "connecting" | "pending";
-  priority: "high" | "medium" | "low";
-  keywords: string[];
-  emotionalState: "calm" | "distress" | "panic" | "anxious";
-}
+import { useQueue } from "@/contexts/queue-context";
+import { useChat } from "@/contexts/chat-context";
+import { useRouter } from "next/navigation";
 
 interface FloatingQueueProps {
-  calls?: QueueCall[];
   panelRef?: React.RefObject<ResizablePrimitive.ImperativePanelHandle | null>;
-  onTakeCall?: (callId: string) => void;
 }
 
 export function FloatingQueue({
-  calls = [],
   panelRef,
-  onTakeCall,
 }: FloatingQueueProps) {
+  const { calls } = useQueue();
+  const { selectCall } = useChat();
+  const router = useRouter();
+
+  const handleTakeCall = (callId: string) => {
+    // Select the call in the chat context
+    selectCall(callId);
+    // Navigate to active call page
+    router.push("/active-call");
+  };
   const handleCollapse = () => {
     if (panelRef?.current) {
       panelRef.current.collapse();
@@ -35,7 +33,11 @@ export function FloatingQueue({
   const calculateAverageWaitTime = () => {
     if (calls.length === 0) return "0m 0s";
 
-    const totalWaitTime = calls.reduce((sum, call) => sum + call.waitTime, 0);
+    // Calculate wait time based on call start time
+    const totalWaitTime = calls.reduce((sum, call) => {
+      const waitTimeMs = Date.now() - call.startTime.getTime();
+      return sum + Math.floor(waitTimeMs / 1000);
+    }, 0);
     const averageSeconds = Math.floor(totalWaitTime / calls.length);
     const minutes = Math.floor(averageSeconds / 60);
     const seconds = averageSeconds % 60;
@@ -95,15 +97,8 @@ export function FloatingQueue({
             {calls.map((call) => (
               <QueuedCall
                 key={call.id}
-                id={call.id}
-                fullName={call.callerName}
-                phoneNumber={call.phoneNumber}
-                priority={call.priority}
-                waitTime={call.waitTime}
-                keywords={call.keywords}
-                emotionalState={call.emotionalState}
-                aiStatus={call.aiStatus}
-                onTakeCall={onTakeCall}
+                call={call}
+                onTakeCall={handleTakeCall}
               />
             ))}
           </div>
