@@ -33,9 +33,9 @@ const navigationItems = [
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const { responder, logout } = useAuth();
+  const { user, logout } = useAuth();
 
-  // Get initials from responder name
+  // Get initials from user name
   const getInitials = (name?: string) => {
     if (!name) return "??";
     return name
@@ -47,9 +47,9 @@ export function AppSidebar() {
   };
 
   const userData = {
-    name: responder?.name || "Unknown User",
-    email: `${responder?.responderId || ""} • ${responder?.role || ""}`,
-    initials: getInitials(responder?.name),
+    name: user?.fullName || "Unknown User",
+    email: `${user?.employeeId || ""} • ${user?.role || ""}`,
+    initials: getInitials(user?.fullName),
   };
 
   return (
@@ -90,7 +90,7 @@ export function AppSidebar() {
       </nav>
 
       {/* Admin Panel - Only visible to admins */}
-      {responder?.role === "admin" && (
+      {user?.role === "ADMIN" && (
         <footer className="border-t border-sidebar-border p-3">
           <Link
             href="/admin"

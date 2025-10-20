@@ -7,11 +7,11 @@ import Link from "next/link";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiredRole?: "responder" | "supervisor" | "admin";
+  requiredRole?: "OPERATOR" | "ADMIN" | "admin"; // Keep "admin" for backward compatibility
 }
 
 export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
-  const { responder, isLoading, isAuthenticated } = useAuth();
+  const { user, isLoading, isAuthenticated } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -40,12 +40,11 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
   }
 
   // Check role-based access
-  const hasRequiredRole = !requiredRole || responder?.role === requiredRole;
+  // Map old "admin" role to new "ADMIN" for backward compatibility
+  const normalizedRequiredRole = requiredRole === "admin" ? "ADMIN" : requiredRole;
+  const hasRequiredRole = !normalizedRequiredRole || user?.role === normalizedRequiredRole;
 
-  // Allow supervisor to access admin routes if needed (optional)
-  const supervisorCanAccessAdmin = requiredRole === "admin" && responder?.role === "supervisor";
-
-  if (!hasRequiredRole && !supervisorCanAccessAdmin) {
+  if (!hasRequiredRole) {
     // Show unauthorized message inline
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
@@ -73,7 +72,7 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
             You don't have permission to access this page.
           </p>
           <p className="text-sm text-gray-500 mb-8">
-            Your role: <span className="font-medium text-gray-700">{responder?.role}</span>
+            Your role: <span className="font-medium text-gray-700">{user?.role}</span>
             {requiredRole && (
               <>
                 {" • "}Required role: <span className="font-medium text-gray-700">{requiredRole}</span>

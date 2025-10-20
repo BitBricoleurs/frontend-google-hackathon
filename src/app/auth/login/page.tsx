@@ -10,7 +10,7 @@ import {
 } from "@phosphor-icons/react/dist/ssr";
 
 export default function LoginPage() {
-  const [responderId, setResponderId] = useState("");
+  const [employeeId, setEmployeeId] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const { login, isLoading } = useAuth();
@@ -21,13 +21,13 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
 
-    if (!responderId.trim() || !password.trim()) {
-      setError("Please enter both responder ID and password");
+    if (!employeeId.trim() || !password.trim()) {
+      setError("Please enter both employee ID and password");
       return;
     }
 
     try {
-      await login({ responderId: responderId.trim(), password });
+      await login({ employeeId: employeeId.trim(), password });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
     }
@@ -68,17 +68,17 @@ export default function LoginPage() {
 
             <div>
               <label
-                htmlFor="responderId"
+                htmlFor="employeeId"
                 className="block text-sm font-medium text-foreground mb-2"
               >
-                Responder ID
+                Employee ID
               </label>
               <input
-                id="responderId"
+                id="employeeId"
                 type="text"
-                value={responderId}
-                onChange={(e) => setResponderId(e.target.value)}
-                placeholder="e.g., RESP001"
+                value={employeeId}
+                onChange={(e) => setEmployeeId(e.target.value)}
+                placeholder="e.g., EMP001"
                 className="w-full rounded-lg border border-input bg-background px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20"
                 disabled={isLoading}
                 autoComplete="username"
@@ -123,22 +123,14 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Mock Credentials Info (Remove in production) */}
+          {/* Test Credentials Info (Remove in production) */}
           <div className="mt-6 rounded-lg bg-muted border border-border p-4">
             <p className="text-xs font-semibold text-foreground mb-2">
-              Mock Test Credentials:
+              Test Credentials:
             </p>
             <div className="space-y-1 text-xs text-muted-foreground">
-              <p>
-                <span className="font-medium">Responder:</span> RESP001 /
-                password123
-              </p>
-              <p>
-                <span className="font-medium">Supervisor:</span> RESP002 /
-                password123
-              </p>
-              <p>
-                <span className="font-medium">Admin:</span> ADMIN001 / admin123
+              <p className="italic">
+                Use employee IDs from your backend database
               </p>
             </div>
           </div>

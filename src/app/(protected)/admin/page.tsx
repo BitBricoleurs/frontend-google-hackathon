@@ -25,57 +25,10 @@ export default function AdminPage() {
 }
 
 function AdminContent() {
-  const { responder, logout } = useAuth();
+  const { user, logout } = useAuth();
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="bg-card shadow-sm border-b border-border">
-        <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-destructive">
-                <LockIcon className="h-6 w-6 text-destructive-foreground" weight="fill" />
-              </div>
-              <div>
-                <h1 className="text-xl font-semibold text-card-foreground">
-                  Admin Panel
-                </h1>
-                <p className="text-sm text-muted-foreground">System Administration</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <Link
-                href="/dashboard"
-                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity flex items-center gap-2"
-              >
-                <ArrowLeftIcon className="h-4 w-4" weight="bold" />
-                Back to Dashboard
-              </Link>
-
-              <div className="text-right">
-                <p className="text-sm font-medium text-card-foreground">
-                  {responder?.name}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {responder?.responderId} •{" "}
-                  <span className="text-destructive font-semibold">
-                    {responder?.role}
-                  </span>
-                </p>
-              </div>
-              <button
-                onClick={logout}
-                className="rounded-lg bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground hover:opacity-90 transition-opacity"
-              >
-                Sign Out
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
       {/* Main Content */}
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Stats Grid */}
@@ -222,10 +175,27 @@ function AdminSection({
   actions: string[];
 }) {
   const icons = {
-    users: <UsersFourIcon className="h-6 w-6 text-muted-foreground" weight="duotone" />,
-    settings: <GearIcon className="h-6 w-6 text-muted-foreground" weight="duotone" />,
-    chart: <ChartBarIcon className="h-6 w-6 text-muted-foreground" weight="duotone" />,
-    shield: <ShieldCheckIcon className="h-6 w-6 text-muted-foreground" weight="duotone" />,
+    users: (
+      <UsersFourIcon
+        className="h-6 w-6 text-muted-foreground"
+        weight="duotone"
+      />
+    ),
+    settings: (
+      <GearIcon className="h-6 w-6 text-muted-foreground" weight="duotone" />
+    ),
+    chart: (
+      <ChartBarIcon
+        className="h-6 w-6 text-muted-foreground"
+        weight="duotone"
+      />
+    ),
+    shield: (
+      <ShieldCheckIcon
+        className="h-6 w-6 text-muted-foreground"
+        weight="duotone"
+      />
+    ),
   };
 
   return (
@@ -235,7 +205,9 @@ function AdminSection({
           {icons[icon]}
         </div>
         <div className="flex-1">
-          <h3 className="text-lg font-semibold text-card-foreground mb-1">{title}</h3>
+          <h3 className="text-lg font-semibold text-card-foreground mb-1">
+            {title}
+          </h3>
           <p className="text-sm text-muted-foreground mb-4">{description}</p>
           <ul className="space-y-2">
             {actions.map((action, index) => (
@@ -243,7 +215,10 @@ function AdminSection({
                 key={index}
                 className="flex items-center gap-2 text-sm text-foreground"
               >
-                <CaretRightIcon className="h-4 w-4 text-muted-foreground" weight="bold" />
+                <CaretRightIcon
+                  className="h-4 w-4 text-muted-foreground"
+                  weight="bold"
+                />
                 {action}
               </li>
             ))}

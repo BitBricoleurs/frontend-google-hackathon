@@ -2,13 +2,13 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import type { ResponderProfile, LoginRequest } from "@/types/auth";
+import type { User, LoginRequest } from "@/types/auth";
 import * as authApi from "@/api/auth";
 import { tokenManager } from "@/lib/token-manager";
 import { toast } from "sonner";
 
 interface AuthContextType {
-  responder: ResponderProfile | null;
+  user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (credentials: LoginRequest) => Promise<void>;
@@ -22,7 +22,7 @@ interface AuthProviderProps {
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  const [responder, setResponder] = useState<ResponderProfile | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
@@ -32,16 +32,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
       try {
         const token = tokenManager.getAccessToken();
         if (token) {
-          const isValid = await authApi.verifyToken();
-          if (isValid) {
-            const profile = await authApi.getCurrentResponder();
-            setResponder(profile);
-          } else {
-            tokenManager.clearTokens();
-          }
+          // Try to get user profile - this validates the token
+          const userProfile = await authApi.getCurrentUser();
+          setUser(userProfile);
         }
       } catch (error) {
         console.error("Auth initialization error:", error);
+        // Token is invalid or expired, clear it
         tokenManager.clearTokens();
       } finally {
         setIsLoading(false);
@@ -56,19 +53,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setIsLoading(true);
       const response = await authApi.login(credentials);
 
-      // Store tokens (using 1 hour expiry as default, adjust as needed)
-      const expiresIn = 3600; // 1 hour in seconds
+      // Store access token with expiry from backend (15 minutes = 900 seconds)
+      // Refresh token is automatically stored as httpOnly cookie by backend
       tokenManager.setTokens(
-        response.access_token,
-        expiresIn,
-        false, // rememberMe - set to true if you want persistent login
-        response.responder.id ? parseInt(response.responder.id) : undefined
+        response.accessToken,
+        response.expiresIn,
+        false, // rememberMe - can be enhanced with a checkbox in login form
+        undefined // userId - we'll get this from /auth/me
       );
 
-      // Set responder profile
-      setResponder(response.responder);
+      // Fetch user profile after successful login
+      const userProfile = await authApi.getCurrentUser();
+      setUser(userProfile);
 
-      toast.success(`Welcome back, ${response.responder.name}!`);
+      toast.success(`Welcome back, ${userProfile.fullName}!`);
 
       // Redirect to dashboard
       router.push("/dashboard");
@@ -84,11 +82,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const logout = async () => {
     try {
       setIsLoading(true);
+      // Call backend logout to revoke refresh token
       await authApi.logout();
 
       // Clear tokens and state
       tokenManager.clearTokens();
-      setResponder(null);
+      setUser(null);
 
       toast.success("Logged out successfully");
 
@@ -96,16 +95,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
       router.push("/auth/login");
     } catch (error) {
       console.error("Logout error:", error);
-      toast.error("Logout failed");
+      // Even if logout API fails, clear local state
+      tokenManager.clearTokens();
+      setUser(null);
+      toast.error("Logout failed, but local session cleared");
+      router.push("/auth/login");
     } finally {
       setIsLoading(false);
     }
   };
 
   const value: AuthContextType = {
-    responder,
+    user,
     isLoading,
-    isAuthenticated: !!responder,
+    isAuthenticated: !!user,
     login,
     logout,
   };

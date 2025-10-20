@@ -24,7 +24,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 
 export function AppHeader() {
-  const { responder, logout } = useAuth();
+  const { user, logout } = useAuth();
   const [currentTime, setCurrentTime] = useState(new Date());
 
   // Update time every second
@@ -68,7 +68,7 @@ export function AppHeader() {
 
   const { date, time } = formatDateTime(currentTime);
 
-  // Get initials from responder name
+  // Get initials from user name
   const getInitials = (name?: string) => {
     if (!name) return "??";
     return name
@@ -130,15 +130,15 @@ export function AppHeader() {
             <button className="flex items-center gap-3 rounded-lg hover:bg-secondary hover:text-secondary-foreground px-3 py-2 transition-colors">
               <div className="text-right hidden sm:block">
                 <p className="text-sm font-medium text-foreground">
-                  {responder?.name || "Unknown User"}
+                  {user?.fullName || "Unknown User"}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {responder?.responderId} • {responder?.role}
+                  {user?.employeeId} • {user?.role}
                 </p>
               </div>
               <Avatar className="h-10 w-10">
                 <AvatarFallback className="bg-primary text-primary-foreground">
-                  {getInitials(responder?.name)}
+                  {getInitials(user?.fullName)}
                 </AvatarFallback>
               </Avatar>
               <DotsThreeVerticalIcon
@@ -152,15 +152,15 @@ export function AppHeader() {
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8">
                   <AvatarFallback className="bg-primary text-primary-foreground">
-                    {getInitials(responder?.name)}
+                    {getInitials(user?.fullName)}
                   </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">
-                    {responder?.name || "Unknown User"}
+                    {user?.fullName || "Unknown User"}
                   </span>
                   <span className="text-muted-foreground truncate text-xs">
-                    {responder?.responderId} • {responder?.role}
+                    {user?.employeeId} • {user?.role}
                   </span>
                 </div>
               </div>
