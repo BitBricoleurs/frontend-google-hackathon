@@ -2,14 +2,13 @@
 
 import { useState } from "react";
 import { useAuth } from "@/contexts/auth-context";
-import { useSearchParams } from "next/navigation";
 import {
   IdentificationCardIcon,
   XCircleIcon,
   CircleNotchIcon,
-  Eye,
-  EyeSlash,
-} from "@phosphor-icons/react/dist/ssr";
+  EyeIcon,
+  EyeSlashIcon,
+} from "@phosphor-icons/react";
 
 export default function LoginPage() {
   const [employeeId, setEmployeeId] = useState("");
@@ -17,8 +16,6 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const { login, isLoading } = useAuth();
-  const searchParams = useSearchParams();
-  const redirectUrl = searchParams.get("redirect");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,7 +60,10 @@ export default function LoginPage() {
             {error && (
               <div className="rounded-lg bg-destructive/10 border border-destructive/30 p-4">
                 <div className="flex items-center gap-2">
-                  <XCircleIcon className="h-5 w-5 text-destructive" weight="fill" />
+                  <XCircleIcon
+                    className="h-5 w-5 text-destructive"
+                    weight="fill"
+                  />
                   <p className="text-sm text-destructive">{error}</p>
                 </div>
               </div>
@@ -113,9 +113,9 @@ export default function LoginPage() {
                   disabled={isLoading}
                 >
                   {showPassword ? (
-                    <EyeSlash className="h-5 w-5" weight="bold" />
+                    <EyeSlashIcon className="h-5 w-5" weight="bold" />
                   ) : (
-                    <Eye className="h-5 w-5" weight="bold" />
+                    <EyeIcon className="h-5 w-5" weight="bold" />
                   )}
                 </button>
               </div>

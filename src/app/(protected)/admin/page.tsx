@@ -1,20 +1,16 @@
 "use client";
 
 import { ProtectedRoute } from "@/components/auth/protected-route";
-import { useAuth } from "@/contexts/auth-context";
-import Link from "next/link";
 import {
-  Lock as LockIcon,
-  ArrowLeft as ArrowLeftIcon,
-  UsersFour as UsersFourIcon,
-  CheckCircle as CheckCircleIcon,
-  Cpu as CpuIcon,
-  Phone as PhoneIcon,
-  Gear as GearIcon,
-  ChartBar as ChartBarIcon,
-  ShieldCheck as ShieldCheckIcon,
-  CaretRight as CaretRightIcon,
-} from "@phosphor-icons/react/dist/ssr";
+  UsersFourIcon,
+  CheckCircleIcon,
+  CpuIcon,
+  PhoneIcon,
+  GearIcon,
+  ChartBarIcon,
+  ShieldCheckIcon,
+  CaretRightIcon,
+} from "@phosphor-icons/react";
 
 export default function AdminPage() {
   return (
