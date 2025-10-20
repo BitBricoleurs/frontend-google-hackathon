@@ -18,15 +18,13 @@ import {
 
 export default function AdminPage() {
   return (
-    <ProtectedRoute requiredRole="admin">
+    <ProtectedRoute requiredRole="ADMIN">
       <AdminContent />
     </ProtectedRoute>
   );
 }
 
 function AdminContent() {
-  const { user, logout } = useAuth();
-
   return (
     <div className="min-h-screen bg-background">
       {/* Main Content */}
