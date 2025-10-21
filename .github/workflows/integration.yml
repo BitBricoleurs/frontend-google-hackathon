@@ -178,23 +178,6 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-      - name: Comment PR with SonarCloud results
-        uses: actions/github-script@v7
-        if: always()
-        with:
-          script: |
-            const projectKey = 'BitBricoleurs_frontend-google-hackathon';
-            const org = 'bitbricoleurs';
-            const prNumber = context.payload.pull_request.number;
-            const sonarUrl = `https://sonarcloud.io/dashboard?id=${projectKey}&pullRequest=${prNumber}`;
-
-            github.rest.issues.createComment({
-              issue_number: prNumber,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `## SonarCloud Analysis Complete\n\n[View detailed analysis results on SonarCloud](${sonarUrl})`
-            });
-
   build:
     name: Build Application
     runs-on: ubuntu-latest
