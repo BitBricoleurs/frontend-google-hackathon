@@ -29,9 +29,9 @@ export class ApiError extends Error {
 
 // Create axios instance with base configuration
 const apiClient: AxiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  baseURL: `${process.env.NEXT_PUBLIC_API_URL}/api/v1`,
   timeout: 10000,
-  withCredentials: true, // Essential for cookie-based auth
+  withCredentials: true, // Essential for cookie-based auth (refresh token)
   headers: {
     "Content-Type": "application/json",
   },
@@ -104,9 +104,14 @@ apiClient.interceptors.response.use(
     };
 
     // Handle 401 errors with token refresh (but skip if this is a refresh call itself)
+    // Also skip for login and refresh endpoints as they should not trigger token refresh
+    const isAuthEndpoint = originalRequest.url?.includes('/auth/login') ||
+                           originalRequest.url?.includes('/auth/refresh');
+
     if (
       error.response?.status === 401 &&
       !originalRequest._retry &&
+      !isAuthEndpoint &&
       !(originalRequest as AxiosRequestConfig & { skipAuthRetry?: boolean })
         .skipAuthRetry
     ) {
@@ -153,11 +158,18 @@ apiClient.interceptors.response.use(
     // Handle other errors
     let message = "An unexpected error occurred";
     const status = error.response?.status;
+    let code: string | undefined;
     let details: unknown;
 
     if (error.response) {
       const { status, data } = error.response;
+
+      // Backend returns errors in format: { error: { code, message }, timestamp, path }
       const errorData = data as {
+        error?: {
+          code?: string;
+          message?: string;
+        };
         message?: string;
         errors?: unknown;
         detail?: string;
@@ -165,46 +177,53 @@ apiClient.interceptors.response.use(
 
       console.log("errorData", errorData);
 
-      switch (status) {
-        case 400:
-          message = errorData?.message || errorData?.detail || "Bad request";
-          break;
-        case 401:
-          message = errorData?.message || errorData?.detail || "Unauthorized";
-          break;
-        case 403:
-          message =
-            errorData?.message ||
-            errorData?.detail ||
-            "Forbidden - Insufficient permissions";
-          break;
-        case 404:
-          message =
-            errorData?.message || errorData?.detail || "Resource not found";
-          break;
-        case 409:
-          message =
-            errorData?.message ||
-            errorData?.detail ||
-            "Resource already exists";
-          break;
-        case 422:
-          message = errorData?.message || "Validation error";
-          details = errorData?.errors;
-          break;
-        case 500:
-          message =
-            errorData?.message || errorData?.detail || "Internal server error";
-          break;
-        default:
-          message =
-            errorData?.message || errorData?.detail || `Error ${status}`;
+      // Try to extract message from backend error format first
+      if (errorData?.error?.message) {
+        message = errorData.error.message;
+        code = errorData.error.code;
+      } else {
+        // Fallback to generic messages
+        switch (status) {
+          case 400:
+            message = errorData?.message || errorData?.detail || "Bad request";
+            break;
+          case 401:
+            message = errorData?.message || errorData?.detail || "Unauthorized";
+            break;
+          case 403:
+            message =
+              errorData?.message ||
+              errorData?.detail ||
+              "Forbidden - Insufficient permissions";
+            break;
+          case 404:
+            message =
+              errorData?.message || errorData?.detail || "Resource not found";
+            break;
+          case 409:
+            message =
+              errorData?.message ||
+              errorData?.detail ||
+              "Resource already exists";
+            break;
+          case 422:
+            message = errorData?.message || "Validation error";
+            details = errorData?.errors;
+            break;
+          case 500:
+            message =
+              errorData?.message || errorData?.detail || "Internal server error";
+            break;
+          default:
+            message =
+              errorData?.message || errorData?.detail || `Error ${status}`;
+        }
       }
     } else if (error.request) {
       message = "Network error - Please check your connection";
     }
 
-    const apiError = new ApiError(message, status, undefined, details);
+    const apiError = new ApiError(message, status, code, details);
 
     // Show toast notification for errors (except 401 which is handled automatically)
     // if (error.response?.status !== 401) {
@@ -219,10 +238,10 @@ apiClient.interceptors.response.use(
 // Centralized token refresh function
 async function performTokenRefresh(): Promise<void> {
   const response = await apiClient.post<RefreshTokenResponse>("/auth/refresh");
-  const { access_token, expires_in } = response.data;
+  const { accessToken, expiresIn } = response.data;
 
   // Update tokens in manager
-  tokenManager.updateAccessToken(access_token, expires_in);
+  tokenManager.updateAccessToken(accessToken, expiresIn);
 
   if (process.env.NODE_ENV === "development") {
     console.log("🔄 Tokens refreshed successfully");

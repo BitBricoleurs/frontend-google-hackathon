@@ -2,32 +2,32 @@
 
 import { useState } from "react";
 import { useAuth } from "@/contexts/auth-context";
-import { useSearchParams } from "next/navigation";
 import {
   IdentificationCardIcon,
   XCircleIcon,
   CircleNotchIcon,
-} from "@phosphor-icons/react/dist/ssr";
+  EyeIcon,
+  EyeSlashIcon,
+} from "@phosphor-icons/react";
 
 export default function LoginPage() {
-  const [responderId, setResponderId] = useState("");
+  const [employeeId, setEmployeeId] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const { login, isLoading } = useAuth();
-  const searchParams = useSearchParams();
-  const redirectUrl = searchParams.get("redirect");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    if (!responderId.trim() || !password.trim()) {
-      setError("Please enter both responder ID and password");
+    if (!employeeId.trim() || !password.trim()) {
+      setError("Please enter both employee ID and password");
       return;
     }
 
     try {
-      await login({ responderId: responderId.trim(), password });
+      await login({ employeeId: employeeId.trim(), password });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
     }
@@ -60,7 +60,10 @@ export default function LoginPage() {
             {error && (
               <div className="rounded-lg bg-destructive/10 border border-destructive/30 p-4">
                 <div className="flex items-center gap-2">
-                  <XCircleIcon className="h-5 w-5 text-destructive" weight="fill" />
+                  <XCircleIcon
+                    className="h-5 w-5 text-destructive"
+                    weight="fill"
+                  />
                   <p className="text-sm text-destructive">{error}</p>
                 </div>
               </div>
@@ -68,17 +71,17 @@ export default function LoginPage() {
 
             <div>
               <label
-                htmlFor="responderId"
+                htmlFor="employeeId"
                 className="block text-sm font-medium text-foreground mb-2"
               >
-                Responder ID
+                Employee ID
               </label>
               <input
-                id="responderId"
+                id="employeeId"
                 type="text"
-                value={responderId}
-                onChange={(e) => setResponderId(e.target.value)}
-                placeholder="e.g., RESP001"
+                value={employeeId}
+                onChange={(e) => setEmployeeId(e.target.value)}
+                placeholder="e.g., EMP001"
                 className="w-full rounded-lg border border-input bg-background px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20"
                 disabled={isLoading}
                 autoComplete="username"
@@ -92,16 +95,30 @@ export default function LoginPage() {
               >
                 Password
               </label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
-                className="w-full rounded-lg border border-input bg-background px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20"
-                disabled={isLoading}
-                autoComplete="current-password"
-              />
+              <div className="relative">
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  className="w-full rounded-lg border border-input bg-background px-4 py-3 pr-12 text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20"
+                  disabled={isLoading}
+                  autoComplete="current-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  disabled={isLoading}
+                >
+                  {showPassword ? (
+                    <EyeSlashIcon className="h-5 w-5" weight="bold" />
+                  ) : (
+                    <EyeIcon className="h-5 w-5" weight="bold" />
+                  )}
+                </button>
+              </div>
             </div>
 
             <button
@@ -123,22 +140,14 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Mock Credentials Info (Remove in production) */}
+          {/* Test Credentials Info (Remove in production) */}
           <div className="mt-6 rounded-lg bg-muted border border-border p-4">
             <p className="text-xs font-semibold text-foreground mb-2">
-              Mock Test Credentials:
+              Test Credentials:
             </p>
             <div className="space-y-1 text-xs text-muted-foreground">
-              <p>
-                <span className="font-medium">Responder:</span> RESP001 /
-                password123
-              </p>
-              <p>
-                <span className="font-medium">Supervisor:</span> RESP002 /
-                password123
-              </p>
-              <p>
-                <span className="font-medium">Admin:</span> ADMIN001 / admin123
+              <p className="italic">
+                Use employee IDs from your backend database
               </p>
             </div>
           </div>
