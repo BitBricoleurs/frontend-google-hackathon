@@ -4,14 +4,18 @@ import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import Link from "next/link";
+import { ShieldCheckIcon } from "@phosphor-icons/react";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiredRole?: "responder" | "supervisor" | "admin";
+  requiredRole?: "OPERATOR" | "ADMIN"; // Keep "admin" for backward compatibility
 }
 
-export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
-  const { responder, isLoading, isAuthenticated } = useAuth();
+export function ProtectedRoute({
+  children,
+  requiredRole,
+}: ProtectedRouteProps) {
+  const { user, isLoading, isAuthenticated } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -40,43 +44,36 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
   }
 
   // Check role-based access
-  const hasRequiredRole = !requiredRole || responder?.role === requiredRole;
-
-  // Allow supervisor to access admin routes if needed (optional)
-  const supervisorCanAccessAdmin = requiredRole === "admin" && responder?.role === "supervisor";
-
-  if (!hasRequiredRole && !supervisorCanAccessAdmin) {
-    // Show unauthorized message inline
+  // Map old "admin" role to new "ADMIN" for backward compatibility
+  const hasRequiredRole = !requiredRole || user?.role === requiredRole;
+  if (!hasRequiredRole) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
         <div className="w-full max-w-md text-center">
           <div className="mb-8 flex justify-center">
             <div className="flex h-20 w-20 items-center justify-center rounded-full bg-red-100">
-              <svg
-                className="h-10 w-10 text-red-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                />
-              </svg>
+              <ShieldCheckIcon
+                className="h-10 w-10 text-red-500"
+                weight="duotone"
+              />
             </div>
           </div>
 
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">Access Denied</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">
+            Access Denied
+          </h1>
           <p className="text-gray-600 mb-2">
-            You don't have permission to access this page.
+            You don&apos;t have permission to access this page.
           </p>
           <p className="text-sm text-gray-500 mb-8">
-            Your role: <span className="font-medium text-gray-700">{responder?.role}</span>
+            Your role:{" "}
+            <span className="font-medium text-gray-700">{user?.role}</span>
             {requiredRole && (
               <>
-                {" • "}Required role: <span className="font-medium text-gray-700">{requiredRole}</span>
+                {" • "}Required role:{" "}
+                <span className="font-medium text-gray-700">
+                  {requiredRole}
+                </span>
               </>
             )}
           </p>

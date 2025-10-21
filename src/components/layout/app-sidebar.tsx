@@ -8,10 +8,15 @@ import {
   Phone,
   UsersThree,
   LockIcon,
+  ChartBar,
+  Shield,
+  GearSix,
+  SquaresFour,
 } from "@phosphor-icons/react";
 import { useAuth } from "@/contexts/auth-context";
 import { cn } from "@/lib/utils";
 import { NavUser } from "./nav-user";
+import { motion, AnimatePresence } from "framer-motion";
 
 const navigationItems = [
   {
@@ -31,11 +36,44 @@ const navigationItems = [
   },
 ];
 
+const adminMenuItems = [
+  {
+    name: "Admin Dashboard",
+    href: "/admin",
+    icon: SquaresFour,
+  },
+  {
+    name: "Employees",
+    href: "/admin/employees",
+    icon: UsersThree,
+  },
+  {
+    name: "System",
+    href: "/admin/system",
+    icon: GearSix,
+  },
+  {
+    name: "Analytics",
+    href: "/admin/analytics",
+    icon: ChartBar,
+  },
+  {
+    name: "Security",
+    href: "/admin/security",
+    icon: Shield,
+  },
+];
+
 export function AppSidebar() {
   const pathname = usePathname();
-  const { responder, logout } = useAuth();
+  const { user, logout } = useAuth();
+  const [isAdminHovered, setIsAdminHovered] = React.useState(false);
 
-  // Get initials from responder name
+  // Check if we're on an admin page
+  const isOnAdminPage = pathname?.startsWith("/admin");
+  const isAdminExpanded = isAdminHovered || isOnAdminPage;
+
+  // Get initials from user name
   const getInitials = (name?: string) => {
     if (!name) return "??";
     return name
@@ -47,9 +85,9 @@ export function AppSidebar() {
   };
 
   const userData = {
-    name: responder?.name || "Unknown User",
-    email: `${responder?.responderId || ""} • ${responder?.role || ""}`,
-    initials: getInitials(responder?.name),
+    name: user?.fullName || "Unknown User",
+    email: `${user?.employeeId || ""} • ${user?.role || ""}`,
+    initials: getInitials(user?.fullName),
   };
 
   return (
@@ -90,26 +128,76 @@ export function AppSidebar() {
       </nav>
 
       {/* Admin Panel - Only visible to admins */}
-      {responder?.role === "admin" && (
-        <footer className="border-t border-sidebar-border p-3">
+      {user?.role === "ADMIN" && (
+        <footer
+          className={cn(
+            "border-sidebar-border p-3 relative",
+            !isAdminExpanded && "border-t"
+          )}
+          onMouseEnter={() => setIsAdminHovered(true)}
+          onMouseLeave={() => setIsAdminHovered(false)}
+        >
+          <AnimatePresence>
+            {isAdminExpanded && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 20 }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+                className="absolute bottom-full left-0 right-0 pt-3 px-3 space-y-2 bg-transparent border-sidebar-border border-t"
+              >
+                {adminMenuItems.slice(1).map((item) => {
+                  const isActive =
+                    pathname === item.href ||
+                    pathname?.startsWith(item.href + "/");
+                  const Icon = item.icon;
+
+                  return (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      className={cn(
+                        "flex flex-col items-center justify-center gap-2 py-4 px-3 rounded-lg transition-colors",
+                        isActive
+                          ? "bg-accent text-accent-foreground"
+                          : "text-sidebar-foreground hover:bg-accent/10"
+                      )}
+                    >
+                      <Icon
+                        className="h-6 w-6"
+                        weight={isActive ? "fill" : "regular"}
+                      />
+                      <span className="text-xs font-medium text-center">
+                        {item.name}
+                      </span>
+                    </Link>
+                  );
+                })}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           <Link
             href="/admin"
             className={cn(
-              "flex flex-col items-center justify-center gap-2 py-4 px-3 rounded-lg transition-colors",
-              pathname === "/admin" || pathname?.startsWith("/admin/")
+              "w-full flex flex-col items-center justify-center gap-2 py-4 px-3 rounded-lg transition-colors",
+              pathname === "/admin"
                 ? "bg-accent text-accent-foreground"
                 : "text-sidebar-foreground hover:bg-accent/10"
             )}
           >
-            <LockIcon
-              className="h-6 w-6"
-              weight={
-                pathname === "/admin" || pathname?.startsWith("/admin/")
-                  ? "fill"
-                  : "regular"
-              }
-            />
-            <span className="text-xs font-medium text-center">Admin</span>
+            <motion.div
+              animate={{ rotate: isAdminExpanded ? 180 : 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <SquaresFour
+                className="h-6 w-6"
+                weight={pathname === "/admin" ? "fill" : "regular"}
+              />
+            </motion.div>
+            <span className="text-xs font-medium text-center">
+              {isAdminExpanded ? "Admin Dashboard" : "Admin"}
+            </span>
           </Link>
         </footer>
       )}

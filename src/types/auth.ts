@@ -1,43 +1,77 @@
-// Responder/Emergency operator authentication
-interface LoginRequest {
-  responderId: string; // Emergency responder ID
+// Authentication types matching backend API
+
+/**
+ * User role types as defined in the backend
+ */
+export type UserRole = "OPERATOR" | "ADMIN";
+
+/**
+ * User entity matching backend User model
+ */
+export interface User {
+  id: string;
+  employeeId: string;
+  fullName: string;
+  role: UserRole;
+  operatorId: string | null;
+  isActive: boolean;
+  lastLoginAt: Date | null;
+  createdAt: Date;
+}
+
+/**
+ * Login request payload
+ */
+export interface LoginRequest {
+  employeeId: string;
   password: string;
 }
 
-interface LoginResponse {
-  access_token: string;
-  refresh_token: string;
-  responder: ResponderProfile;
+/**
+ * Login response from backend
+ */
+export interface LoginResponse {
+  accessToken: string;
+  tokenType: string;
+  expiresIn: number; // in seconds
 }
 
-interface ResponderProfile {
-  id: string;
-  responderId: string;
-  name: string;
-  role: "responder" | "supervisor" | "admin";
-  department: string;
-  shift?: string;
+/**
+ * Token refresh response
+ */
+export interface RefreshTokenResponse {
+  accessToken: string;
+  tokenType: string;
+  expiresIn: number; // in seconds
 }
 
-interface TokenData {
-  access_token: string;
-  refresh_token: string;
-  expires_in: number;
-  token_type: string;
-  scope: string;
+/**
+ * Change password request payload
+ */
+export interface ChangePasswordRequest {
+  oldPassword: string;
+  newPassword: string;
 }
 
-interface RefreshTokenResponse {
-  access_token: string;
-  expires_in: number;
-  token_type: string;
-  scope: string;
+/**
+ * Change password response
+ */
+export interface ChangePasswordResponse {
+  message: string;
 }
 
-export type {
-  LoginRequest,
-  LoginResponse,
-  ResponderProfile,
-  TokenData,
-  RefreshTokenResponse,
-};
+/**
+ * Backend error response format
+ */
+export interface AuthErrorResponse {
+  error: {
+    code: string;
+    message: string;
+  };
+  timestamp: string;
+  path: string;
+}
+
+// Legacy type alias for backward compatibility
+// TODO: Remove once all components are updated
+export type ResponderProfile = User;
