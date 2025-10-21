@@ -21,11 +21,7 @@ interface FloatingQueueProps {
   onTakeCall?: (callId: string) => void;
 }
 
-export function FloatingQueue({
-  calls = [],
-  panelRef,
-  onTakeCall,
-}: FloatingQueueProps) {
+export function FloatingQueue({ calls = [], panelRef, onTakeCall }: FloatingQueueProps) {
   const handleCollapse = () => {
     if (panelRef?.current) {
       panelRef.current.collapse();
@@ -50,25 +46,18 @@ export function FloatingQueue({
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-2">
             <Phone weight="duotone" className="h-5 w-5 text-primary" />
-            <h2 className="font-semibold text-sm text-foreground">
-              Waiting Queue
-            </h2>
+            <h2 className="font-semibold text-sm text-foreground">Waiting Queue</h2>
           </div>
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1.5 rounded-full bg-primary px-2.5 py-1">
-              <span className="text-xs font-bold text-primary-foreground">
-                {calls.length}
-              </span>
+              <span className="text-xs font-bold text-primary-foreground">{calls.length}</span>
             </div>
             <button
               onClick={handleCollapse}
               className="flex h-7 w-7 items-center justify-center rounded-md hover:bg-accent transition-colors"
               aria-label="Collapse queue"
             >
-              <CaretRightIcon
-                weight="bold"
-                className="h-4 w-4 text-foreground"
-              />
+              <CaretRightIcon weight="bold" className="h-4 w-4 text-foreground" />
             </button>
           </div>
         </div>
@@ -84,10 +73,7 @@ export function FloatingQueue({
       <div className="flex-1 overflow-y-auto">
         {calls.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-            <Phone
-              weight="duotone"
-              className="h-12 w-12 text-muted-foreground/50 mb-3"
-            />
+            <Phone weight="duotone" className="h-12 w-12 text-muted-foreground/50 mb-3" />
             <p className="text-sm text-muted-foreground">No calls in queue</p>
           </div>
         ) : (

@@ -45,10 +45,7 @@ export function EditUserDialog({ user, open, onOpenChange }: EditUserDialogProps
     }
   }, [user, open]);
 
-  const hasChanges =
-    fullName !== user.fullName ||
-    role !== user.role ||
-    isActive !== user.isActive;
+  const hasChanges = fullName !== user.fullName || role !== user.role || isActive !== user.isActive;
 
   const isFormValid = fullName.trim() !== "";
 
@@ -87,15 +84,8 @@ export function EditUserDialog({ user, open, onOpenChange }: EditUserDialogProps
             {/* Employee ID (read-only) */}
             <div className="space-y-2">
               <Label htmlFor="employeeId">Employee ID</Label>
-              <Input
-                id="employeeId"
-                value={user.employeeId}
-                disabled
-                className="bg-muted"
-              />
-              <p className="text-xs text-muted-foreground">
-                Employee ID cannot be changed
-              </p>
+              <Input id="employeeId" value={user.employeeId} disabled className="bg-muted" />
+              <p className="text-xs text-muted-foreground">Employee ID cannot be changed</p>
             </div>
 
             {/* Full Name */}
@@ -131,9 +121,7 @@ export function EditUserDialog({ user, open, onOpenChange }: EditUserDialogProps
                   <SelectItem value="ADMIN">Admin</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">
-                Admins have full system access
-              </p>
+              <p className="text-xs text-muted-foreground">Admins have full system access</p>
             </div>
 
             {/* Status */}
@@ -152,9 +140,7 @@ export function EditUserDialog({ user, open, onOpenChange }: EditUserDialogProps
                   <SelectItem value="inactive">Inactive</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">
-                Inactive users cannot log in
-              </p>
+              <p className="text-xs text-muted-foreground">Inactive users cannot log in</p>
             </div>
           </div>
 
@@ -169,9 +155,7 @@ export function EditUserDialog({ user, open, onOpenChange }: EditUserDialogProps
             </Button>
             <Button
               type="submit"
-              disabled={
-                !isFormValid || !hasChanges || updateUserMutation.isPending
-              }
+              disabled={!isFormValid || !hasChanges || updateUserMutation.isPending}
             >
               {updateUserMutation.isPending ? "Saving..." : "Save Changes"}
             </Button>

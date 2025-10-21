@@ -52,12 +52,7 @@ export async function getCurrentUser(): Promise<User> {
  * @param data - Old password and new password
  * @returns Success message
  */
-export async function changePassword(
-  data: ChangePasswordRequest
-): Promise<ChangePasswordResponse> {
-  const response = await api.patch<ChangePasswordResponse>(
-    "/auth/change-password",
-    data
-  );
+export async function changePassword(data: ChangePasswordRequest): Promise<ChangePasswordResponse> {
+  const response = await api.patch<ChangePasswordResponse>("/auth/change-password", data);
   return response.data;
 }

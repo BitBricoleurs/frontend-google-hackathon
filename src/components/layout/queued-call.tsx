@@ -1,12 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import {
-  RobotIcon,
-  ClockIcon,
-  PhoneIcon,
-  WarningCircleIcon,
-} from "@phosphor-icons/react";
+import { RobotIcon, ClockIcon, PhoneIcon, WarningCircleIcon } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 
 export interface QueuedCallProps {
@@ -165,9 +160,7 @@ export function QueuedCall({
 
         {/* Name and Priority */}
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-base text-foreground truncate mb-1">
-            {fullName}
-          </h3>
+          <h3 className="font-semibold text-base text-foreground truncate mb-1">{fullName}</h3>
           <div className="flex items-center gap-2">
             <span
               className={cn(
@@ -193,9 +186,7 @@ export function QueuedCall({
             <RobotIcon weight="fill" className="h-4 w-4" />
             <span className="font-medium">{aiStatusLabel}</span>
           </div>
-          <span className="text-sm font-semibold text-accent">
-            {aiStatusPercentage}%
-          </span>
+          <span className="text-sm font-semibold text-accent">{aiStatusPercentage}%</span>
         </div>
         <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
           <div
@@ -207,9 +198,7 @@ export function QueuedCall({
 
       {/* Keywords Detected */}
       <div className="mb-3">
-        <h4 className="text-xs font-medium text-muted-foreground mb-2">
-          Keywords Detected
-        </h4>
+        <h4 className="text-xs font-medium text-muted-foreground mb-2">Keywords Detected</h4>
         <div className="flex flex-wrap gap-1.5">
           {keywords.slice(0, 4).map((keyword, index) => (
             <span
@@ -225,10 +214,7 @@ export function QueuedCall({
       {/* Bottom: Emotional State and Take Button */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
-          <EmotionIcon
-            weight="fill"
-            className={cn("h-4 w-4", emotionConfig.color)}
-          />
+          <EmotionIcon weight="fill" className={cn("h-4 w-4", emotionConfig.color)} />
           <span className={cn("text-sm font-medium", emotionConfig.color)}>
             {emotionConfig.label}
           </span>

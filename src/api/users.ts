@@ -52,10 +52,7 @@ export async function createUser(data: CreateUserRequest): Promise<User> {
  * Update user
  * PATCH /api/v1/users/:id
  */
-export async function updateUser(
-  id: string,
-  data: UpdateUserRequest
-): Promise<User> {
+export async function updateUser(id: string, data: UpdateUserRequest): Promise<User> {
   const response = await api.patch<User>(`/users/${id}`, data);
   return response.data;
 }
@@ -77,10 +74,7 @@ export async function resetUserPassword(
   id: string,
   data: ResetPasswordRequest
 ): Promise<{ message: string; id: string }> {
-  const response = await api.patch<{ message: string; id: string }>(
-    `/users/${id}/password`,
-    data
-  );
+  const response = await api.patch<{ message: string; id: string }>(`/users/${id}/password`, data);
   return response.data;
 }
 
@@ -136,8 +130,7 @@ export function useUpdateUser() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateUserRequest }) =>
-      updateUser(id, data),
+    mutationFn: ({ id, data }: { id: string; data: UpdateUserRequest }) => updateUser(id, data),
     onSuccess: (updatedUser) => {
       // Invalidate and update cache
       queryClient.invalidateQueries({ queryKey: ["users"] });

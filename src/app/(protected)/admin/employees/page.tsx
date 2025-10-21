@@ -55,16 +55,11 @@ function EmployeesContent() {
   const [searchInput, setSearchInput] = useState(""); // User input
   const [debouncedSearch, setDebouncedSearch] = useState(""); // Debounced value
   const [roleFilter, setRoleFilter] = useState<UserRole | "all">("all");
-  const [statusFilter, setStatusFilter] = useState<
-    "all" | "active" | "inactive"
-  >("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
 
   const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [resettingPasswordUser, setResettingPasswordUser] =
-    useState<User | null>(null);
-  const [togglingStatusUser, setTogglingStatusUser] = useState<User | null>(
-    null
-  );
+  const [resettingPasswordUser, setResettingPasswordUser] = useState<User | null>(null);
+  const [togglingStatusUser, setTogglingStatusUser] = useState<User | null>(null);
 
   const limit = 20;
 
@@ -84,12 +79,7 @@ function EmployeesContent() {
     limit,
     search: debouncedSearch || undefined,
     role: roleFilter !== "all" ? roleFilter : undefined,
-    isActive:
-      statusFilter === "active"
-        ? true
-        : statusFilter === "inactive"
-        ? false
-        : undefined,
+    isActive: statusFilter === "active" ? true : statusFilter === "inactive" ? false : undefined,
   };
 
   const { data, isLoading, error } = useUsers(queryParams);
@@ -103,18 +93,11 @@ function EmployeesContent() {
         <div className="mb-8 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary">
-              <UsersThree
-                className="h-6 w-6 text-primary-foreground"
-                weight="fill"
-              />
+              <UsersThree className="h-6 w-6 text-primary-foreground" weight="fill" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-foreground">
-                Employee Management
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                Manage system users and permissions
-              </p>
+              <h1 className="text-2xl font-bold text-foreground">Employee Management</h1>
+              <p className="text-sm text-muted-foreground">Manage system users and permissions</p>
             </div>
           </div>
           <CreateUserDialog />
@@ -227,33 +210,21 @@ function EmployeesContent() {
                   // User rows
                   data.data.map((user) => (
                     <TableRow key={user.id}>
-                      <TableCell className="font-medium">
-                        {user.employeeId}
-                      </TableCell>
+                      <TableCell className="font-medium">{user.employeeId}</TableCell>
                       <TableCell>{user.fullName}</TableCell>
                       <TableCell>
-                        <Badge
-                          variant={
-                            user.role === "ADMIN" ? "destructive" : "default"
-                          }
-                        >
+                        <Badge variant={user.role === "ADMIN" ? "destructive" : "default"}>
                           {user.role}
                         </Badge>
                       </TableCell>
                       <TableCell>
                         {user.isActive ? (
                           <Badge className="bg-green-600 text-white">
-                            <CheckCircle
-                              className="h-3 w-3 mr-1"
-                              weight="fill"
-                            />
+                            <CheckCircle className="h-3 w-3 mr-1" weight="fill" />
                             Active
                           </Badge>
                         ) : (
-                          <Badge
-                            variant="secondary"
-                            className="bg-gray-200 dark:bg-gray-700"
-                          >
+                          <Badge variant="secondary" className="bg-gray-200 dark:bg-gray-700">
                             <Prohibit className="h-3 w-3 mr-1" weight="fill" />
                             Inactive
                           </Badge>
@@ -288,11 +259,7 @@ function EmployeesContent() {
                             variant="ghost"
                             size="sm"
                             onClick={() => setTogglingStatusUser(user)}
-                            title={
-                              user.isActive
-                                ? "Deactivate user"
-                                : "Activate user"
-                            }
+                            title={user.isActive ? "Deactivate user" : "Activate user"}
                           >
                             {user.isActive ? (
                               <ToggleRight
@@ -318,13 +285,9 @@ function EmployeesContent() {
                         className="h-12 w-12 mx-auto mb-4 text-muted-foreground"
                         weight="duotone"
                       />
-                      <p className="text-muted-foreground font-medium mb-1">
-                        No users found
-                      </p>
+                      <p className="text-muted-foreground font-medium mb-1">No users found</p>
                       <p className="text-sm text-muted-foreground">
-                        {debouncedSearch ||
-                        roleFilter !== "all" ||
-                        statusFilter !== "all"
+                        {debouncedSearch || roleFilter !== "all" || statusFilter !== "all"
                           ? "Try adjusting your filters"
                           : "Create your first user to get started"}
                       </p>
@@ -339,9 +302,8 @@ function EmployeesContent() {
           {data && data.data.length > 0 && (
             <div className="flex items-center justify-between border-t border-border px-6 py-4">
               <div className="text-sm text-muted-foreground">
-                Showing {(page - 1) * limit + 1} to{" "}
-                {Math.min(page * limit, data.pagination.total)} of{" "}
-                {data.pagination.total} users
+                Showing {(page - 1) * limit + 1} to {Math.min(page * limit, data.pagination.total)}{" "}
+                of {data.pagination.total} users
               </div>
               <div className="flex items-center gap-2">
                 <Button

@@ -4,15 +4,12 @@
  * Mock API handlers for queue management endpoints
  */
 
-import { http, HttpResponse } from 'msw';
-import {
-  mockQueueCalls,
-  calculateQueueStats,
-} from '../data/queue.fixtures';
-import { mockErrorResponses } from '../data/auth.fixtures';
-import type { QueueCall } from '@/components/layout/floating-queue';
+import { http, HttpResponse } from "msw";
+import { mockQueueCalls, calculateQueueStats } from "../data/queue.fixtures";
+import { mockErrorResponses } from "../data/auth.fixtures";
+import type { QueueCall } from "@/components/layout/floating-queue";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
 // In-memory store for testing (resets between tests)
 let queueStore = [...mockQueueCalls];
@@ -26,16 +23,13 @@ export const queueHandlers = [
    * Get all calls in the queue
    */
   http.get(`${API_BASE_URL}/api/queue/calls`, ({ request }) => {
-    const authHeader = request.headers.get('Authorization');
+    const authHeader = request.headers.get("Authorization");
 
     if (!authHeader) {
       return HttpResponse.json(mockErrorResponses.unauthorized, { status: 401 });
     }
 
-    return HttpResponse.json(
-      { success: true, data: queueStore },
-      { status: 200 }
-    );
+    return HttpResponse.json({ success: true, data: queueStore }, { status: 200 });
   }),
 
   /**
@@ -43,13 +37,13 @@ export const queueHandlers = [
    * Add a new call to the queue
    */
   http.post(`${API_BASE_URL}/api/queue/calls`, async ({ request }) => {
-    const authHeader = request.headers.get('Authorization');
+    const authHeader = request.headers.get("Authorization");
 
     if (!authHeader) {
       return HttpResponse.json(mockErrorResponses.unauthorized, { status: 401 });
     }
 
-    const body = (await request.json()) as Omit<QueueCall, 'id'>;
+    const body = (await request.json()) as Omit<QueueCall, "id">;
 
     // Create new call with generated ID
     const newCall: QueueCall = {
@@ -59,10 +53,7 @@ export const queueHandlers = [
 
     queueStore.push(newCall);
 
-    return HttpResponse.json(
-      { success: true, data: newCall },
-      { status: 201 }
-    );
+    return HttpResponse.json({ success: true, data: newCall }, { status: 201 });
   }),
 
   /**
@@ -70,7 +61,7 @@ export const queueHandlers = [
    * Remove a call from the queue
    */
   http.delete(`${API_BASE_URL}/api/queue/calls/:callId`, ({ request, params }) => {
-    const authHeader = request.headers.get('Authorization');
+    const authHeader = request.headers.get("Authorization");
 
     if (!authHeader) {
       return HttpResponse.json(mockErrorResponses.unauthorized, { status: 401 });
@@ -83,8 +74,8 @@ export const queueHandlers = [
       return HttpResponse.json(
         {
           error: {
-            code: 'CALL_NOT_FOUND',
-            message: 'Call not found in queue',
+            code: "CALL_NOT_FOUND",
+            message: "Call not found in queue",
           },
         },
         { status: 404 }
@@ -95,7 +86,7 @@ export const queueHandlers = [
     queueStore.splice(callIndex, 1);
 
     return HttpResponse.json(
-      { success: true, message: 'Call removed from queue' },
+      { success: true, message: "Call removed from queue" },
       { status: 200 }
     );
   }),
@@ -105,7 +96,7 @@ export const queueHandlers = [
    * Update a call in the queue
    */
   http.patch(`${API_BASE_URL}/api/queue/calls/:callId`, async ({ request, params }) => {
-    const authHeader = request.headers.get('Authorization');
+    const authHeader = request.headers.get("Authorization");
 
     if (!authHeader) {
       return HttpResponse.json(mockErrorResponses.unauthorized, { status: 401 });
@@ -120,8 +111,8 @@ export const queueHandlers = [
       return HttpResponse.json(
         {
           error: {
-            code: 'CALL_NOT_FOUND',
-            message: 'Call not found in queue',
+            code: "CALL_NOT_FOUND",
+            message: "Call not found in queue",
           },
         },
         { status: 404 }
@@ -134,10 +125,7 @@ export const queueHandlers = [
       ...body,
     };
 
-    return HttpResponse.json(
-      { success: true, data: queueStore[callIndex] },
-      { status: 200 }
-    );
+    return HttpResponse.json({ success: true, data: queueStore[callIndex] }, { status: 200 });
   }),
 
   /**
@@ -145,7 +133,7 @@ export const queueHandlers = [
    * Get queue statistics
    */
   http.get(`${API_BASE_URL}/api/queue/stats`, ({ request }) => {
-    const authHeader = request.headers.get('Authorization');
+    const authHeader = request.headers.get("Authorization");
 
     if (!authHeader) {
       return HttpResponse.json(mockErrorResponses.unauthorized, { status: 401 });
@@ -153,10 +141,7 @@ export const queueHandlers = [
 
     const stats = calculateQueueStats(queueStore);
 
-    return HttpResponse.json(
-      { success: true, data: stats },
-      { status: 200 }
-    );
+    return HttpResponse.json({ success: true, data: stats }, { status: 200 });
   }),
 ];
 

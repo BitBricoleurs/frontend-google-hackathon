@@ -5,10 +5,10 @@
  * with necessary providers (Auth, Query, etc.)
  */
 
-import React, { ReactElement } from 'react';
-import { render, RenderOptions } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AuthProvider } from '@/contexts/auth-context';
+import React, { ReactElement } from "react";
+import { render, RenderOptions } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { AuthProvider } from "@/contexts/auth-context";
 
 /**
  * Create a new QueryClient for each test
@@ -53,14 +53,11 @@ export function AllProviders({ children, queryClient }: AllProvidersProps) {
  *   render(<MyComponent />, { wrapper: AllProviders })
  *   // Or use renderWithProviders for convenience
  */
-interface CustomRenderOptions extends Omit<RenderOptions, 'wrapper'> {
+interface CustomRenderOptions extends Omit<RenderOptions, "wrapper"> {
   queryClient?: QueryClient;
 }
 
-export function renderWithProviders(
-  ui: ReactElement,
-  options?: CustomRenderOptions
-) {
+export function renderWithProviders(ui: ReactElement, options?: CustomRenderOptions) {
   const { queryClient, ...renderOptions } = options || {};
 
   const Wrapper = ({ children }: { children: React.ReactNode }) => (
@@ -76,10 +73,7 @@ export function renderWithProviders(
 /**
  * Custom render for components that only need QueryClient (no Auth)
  */
-export function renderWithQueryClient(
-  ui: ReactElement,
-  options?: CustomRenderOptions
-) {
+export function renderWithQueryClient(ui: ReactElement, options?: CustomRenderOptions) {
   const { queryClient, ...renderOptions } = options || {};
   const client = queryClient || createTestQueryClient();
 
@@ -104,24 +98,24 @@ export const waitForAsync = () => new Promise((resolve) => setTimeout(resolve, 0
  */
 export const mockUsers = {
   admin: {
-    id: '1',
-    employeeId: 'ADMIN001',
-    name: 'John Admin',
-    role: 'ADMIN' as const,
+    id: "1",
+    employeeId: "ADMIN001",
+    name: "John Admin",
+    role: "ADMIN" as const,
     isActive: true,
   },
   operator: {
-    id: '2',
-    employeeId: 'OPER001',
-    name: 'Jane Operator',
-    role: 'OPERATOR' as const,
+    id: "2",
+    employeeId: "OPER001",
+    name: "Jane Operator",
+    role: "OPERATOR" as const,
     isActive: true,
   },
   inactive: {
-    id: '3',
-    employeeId: 'INACT001',
-    name: 'Inactive User',
-    role: 'OPERATOR' as const,
+    id: "3",
+    employeeId: "INACT001",
+    name: "Inactive User",
+    role: "OPERATOR" as const,
     isActive: false,
   },
 };
@@ -130,11 +124,11 @@ export const mockUsers = {
  * Mock token data
  */
 export const mockTokens = {
-  accessToken: 'mock-access-token-12345',
-  refreshToken: 'mock-refresh-token-67890',
-  expiredToken: 'mock-expired-token',
+  accessToken: "mock-access-token-12345",
+  refreshToken: "mock-refresh-token-67890",
+  expiredToken: "mock-expired-token",
 };
 
 // Re-export everything from @testing-library/react
-export * from '@testing-library/react';
-export { default as userEvent } from '@testing-library/user-event';
+export * from "@testing-library/react";
+export { default as userEvent } from "@testing-library/user-event";

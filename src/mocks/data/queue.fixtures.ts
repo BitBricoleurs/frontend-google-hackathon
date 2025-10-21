@@ -4,62 +4,62 @@
  * Mock data for queue management tests
  */
 
-import { QueueCall } from '@/components/layout/floating-queue';
-import { QueueStats } from '@/services/queue-api';
+import { QueueCall } from "@/components/layout/floating-queue";
+import { QueueStats } from "@/services/queue-api";
 
 /**
  * Mock queue calls with various states and priorities
  */
 export const mockQueueCalls: QueueCall[] = [
   {
-    id: 'call-1',
-    callerName: 'Marie Dubois',
-    phoneNumber: '+33 1 23 45 67 89',
+    id: "call-1",
+    callerName: "Marie Dubois",
+    phoneNumber: "+33 1 23 45 67 89",
     waitTime: 125,
-    aiStatus: 'connected',
-    priority: 'high',
-    keywords: ['chest pain', 'breathing difficulty', 'unconscious'],
-    emotionalState: 'panic',
+    aiStatus: "connected",
+    priority: "high",
+    keywords: ["chest pain", "breathing difficulty", "unconscious"],
+    emotionalState: "panic",
   },
   {
-    id: 'call-2',
-    callerName: 'Jean Martin',
-    phoneNumber: '+33 1 98 76 54 32',
+    id: "call-2",
+    callerName: "Jean Martin",
+    phoneNumber: "+33 1 98 76 54 32",
     waitTime: 85,
-    aiStatus: 'connected',
-    priority: 'medium',
-    keywords: ['accident', 'bleeding', 'leg injury'],
-    emotionalState: 'distress',
+    aiStatus: "connected",
+    priority: "medium",
+    keywords: ["accident", "bleeding", "leg injury"],
+    emotionalState: "distress",
   },
   {
-    id: 'call-3',
-    callerName: 'Sophie Bernard',
-    phoneNumber: '+33 1 55 44 33 22',
+    id: "call-3",
+    callerName: "Sophie Bernard",
+    phoneNumber: "+33 1 55 44 33 22",
     waitTime: 45,
-    aiStatus: 'connecting',
-    priority: 'low',
-    keywords: ['fever', 'nausea'],
-    emotionalState: 'anxious',
+    aiStatus: "connecting",
+    priority: "low",
+    keywords: ["fever", "nausea"],
+    emotionalState: "anxious",
   },
   {
-    id: 'call-4',
-    callerName: 'Pierre Lefebvre',
-    phoneNumber: '+33 1 11 22 33 44',
+    id: "call-4",
+    callerName: "Pierre Lefebvre",
+    phoneNumber: "+33 1 11 22 33 44",
     waitTime: 20,
-    aiStatus: 'pending',
-    priority: 'low',
-    keywords: ['minor cut', 'first aid'],
-    emotionalState: 'calm',
+    aiStatus: "pending",
+    priority: "low",
+    keywords: ["minor cut", "first aid"],
+    emotionalState: "calm",
   },
   {
-    id: 'call-5',
-    callerName: 'Isabelle Moreau',
-    phoneNumber: '+33 1 66 77 88 99',
+    id: "call-5",
+    callerName: "Isabelle Moreau",
+    phoneNumber: "+33 1 66 77 88 99",
     waitTime: 180,
-    aiStatus: 'connected',
-    priority: 'high',
-    keywords: ['heart attack', 'collapsed', 'not responding'],
-    emotionalState: 'panic',
+    aiStatus: "connected",
+    priority: "high",
+    keywords: ["heart attack", "collapsed", "not responding"],
+    emotionalState: "panic",
   },
 ];
 
@@ -72,34 +72,34 @@ export const mockEmptyQueue: QueueCall[] = [];
  * Mock single high-priority call
  */
 export const mockHighPriorityCall: QueueCall = {
-  id: 'call-high-1',
-  callerName: 'Emergency Caller',
-  phoneNumber: '+33 1 99 99 99 99',
+  id: "call-high-1",
+  callerName: "Emergency Caller",
+  phoneNumber: "+33 1 99 99 99 99",
   waitTime: 300,
-  aiStatus: 'connecting',
-  priority: 'high',
-  keywords: ['cardiac arrest', 'CPR needed', 'critical'],
-  emotionalState: 'panic',
+  aiStatus: "connecting",
+  priority: "high",
+  keywords: ["cardiac arrest", "CPR needed", "critical"],
+  emotionalState: "panic",
 };
 
 /**
  * Mock new call to be added
  */
-export const mockNewCall: Omit<QueueCall, 'id'> = {
-  callerName: 'New Caller',
-  phoneNumber: '+33 1 12 34 56 78',
+export const mockNewCall: Omit<QueueCall, "id"> = {
+  callerName: "New Caller",
+  phoneNumber: "+33 1 12 34 56 78",
   waitTime: 0,
-  aiStatus: 'pending',
-  priority: 'medium',
-  keywords: ['headache', 'dizziness'],
-  emotionalState: 'anxious',
+  aiStatus: "pending",
+  priority: "medium",
+  keywords: ["headache", "dizziness"],
+  emotionalState: "anxious",
 };
 
 /**
  * Mock created call response (with generated ID)
  */
 export const mockCreatedCall: QueueCall = {
-  id: 'call-new-123',
+  id: "call-new-123",
   ...mockNewCall,
 };
 
@@ -108,19 +108,19 @@ export const mockCreatedCall: QueueCall = {
  */
 export const mockCallUpdates = {
   statusUpdate: {
-    aiStatus: 'connected' as const,
+    aiStatus: "connected" as const,
   },
   priorityUpdate: {
-    priority: 'high' as const,
+    priority: "high" as const,
   },
   waitTimeUpdate: {
     waitTime: 200,
   },
   fullUpdate: {
-    aiStatus: 'connected' as const,
-    priority: 'high' as const,
+    aiStatus: "connected" as const,
+    priority: "high" as const,
     waitTime: 150,
-    emotionalState: 'panic' as const,
+    emotionalState: "panic" as const,
   },
 };
 
@@ -153,21 +153,21 @@ export const mockEmptyQueueStats: QueueStats = {
  */
 export const mockWebSocketMessages = {
   queueUpdate: {
-    type: 'update',
+    type: "update",
     data: mockQueueCalls,
   },
   newCall: {
-    type: 'add',
+    type: "add",
     data: mockCreatedCall,
   },
   removeCall: {
-    type: 'remove',
-    data: 'call-1',
+    type: "remove",
+    data: "call-1",
   },
   callUpdate: {
-    type: 'update',
+    type: "update",
     data: {
-      id: 'call-1',
+      id: "call-1",
       ...mockCallUpdates.statusUpdate,
     },
   },
@@ -183,13 +183,11 @@ export function calculateQueueStats(calls: QueueCall[]): QueueStats {
 
   return {
     totalCalls: calls.length,
-    averageWaitTime: Math.floor(
-      calls.reduce((acc, call) => acc + call.waitTime, 0) / calls.length
-    ),
-    aiConnected: calls.filter((c) => c.aiStatus === 'connected').length,
-    aiConnecting: calls.filter((c) => c.aiStatus === 'connecting').length,
-    pending: calls.filter((c) => c.aiStatus === 'pending').length,
-    highPriority: calls.filter((c) => c.priority === 'high').length,
+    averageWaitTime: Math.floor(calls.reduce((acc, call) => acc + call.waitTime, 0) / calls.length),
+    aiConnected: calls.filter((c) => c.aiStatus === "connected").length,
+    aiConnecting: calls.filter((c) => c.aiStatus === "connecting").length,
+    pending: calls.filter((c) => c.aiStatus === "pending").length,
+    highPriority: calls.filter((c) => c.priority === "high").length,
   };
 }
 
@@ -208,7 +206,7 @@ export function incrementWaitTimes(calls: QueueCall[], seconds: number): QueueCa
  */
 export function filterByPriority(
   calls: QueueCall[],
-  priority: 'high' | 'medium' | 'low'
+  priority: "high" | "medium" | "low"
 ): QueueCall[] {
   return calls.filter((call) => call.priority === priority);
 }
@@ -218,7 +216,7 @@ export function filterByPriority(
  */
 export function filterByAiStatus(
   calls: QueueCall[],
-  status: 'connected' | 'connecting' | 'pending'
+  status: "connected" | "connecting" | "pending"
 ): QueueCall[] {
   return calls.filter((call) => call.aiStatus === status);
 }

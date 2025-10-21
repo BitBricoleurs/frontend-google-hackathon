@@ -1,9 +1,4 @@
-import axios, {
-  AxiosInstance,
-  AxiosRequestConfig,
-  AxiosResponse,
-  AxiosError,
-} from "axios";
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError } from "axios";
 import { tokenManager } from "./token-manager";
 import type { RefreshTokenResponse } from "@/types/auth";
 import { toast } from "sonner";
@@ -13,12 +8,7 @@ export class ApiError extends Error {
   code?: string;
   details?: unknown;
 
-  constructor(
-    message: string,
-    status?: number,
-    code?: string,
-    details?: unknown
-  ) {
+  constructor(message: string, status?: number, code?: string, details?: unknown) {
     super(message);
     this.name = "ApiError";
     this.status = status;
@@ -105,15 +95,15 @@ apiClient.interceptors.response.use(
 
     // Handle 401 errors with token refresh (but skip if this is a refresh call itself)
     // Also skip for login and refresh endpoints as they should not trigger token refresh
-    const isAuthEndpoint = originalRequest.url?.includes('/auth/login') ||
-                           originalRequest.url?.includes('/auth/refresh');
+    const isAuthEndpoint =
+      originalRequest.url?.includes("/auth/login") ||
+      originalRequest.url?.includes("/auth/refresh");
 
     if (
       error.response?.status === 401 &&
       !originalRequest._retry &&
       !isAuthEndpoint &&
-      !(originalRequest as AxiosRequestConfig & { skipAuthRetry?: boolean })
-        .skipAuthRetry
+      !(originalRequest as AxiosRequestConfig & { skipAuthRetry?: boolean }).skipAuthRetry
     ) {
       if (isRefreshing) {
         // If already refreshing, queue this request
@@ -192,31 +182,23 @@ apiClient.interceptors.response.use(
             break;
           case 403:
             message =
-              errorData?.message ||
-              errorData?.detail ||
-              "Forbidden - Insufficient permissions";
+              errorData?.message || errorData?.detail || "Forbidden - Insufficient permissions";
             break;
           case 404:
-            message =
-              errorData?.message || errorData?.detail || "Resource not found";
+            message = errorData?.message || errorData?.detail || "Resource not found";
             break;
           case 409:
-            message =
-              errorData?.message ||
-              errorData?.detail ||
-              "Resource already exists";
+            message = errorData?.message || errorData?.detail || "Resource already exists";
             break;
           case 422:
             message = errorData?.message || "Validation error";
             details = errorData?.errors;
             break;
           case 500:
-            message =
-              errorData?.message || errorData?.detail || "Internal server error";
+            message = errorData?.message || errorData?.detail || "Internal server error";
             break;
           default:
-            message =
-              errorData?.message || errorData?.detail || `Error ${status}`;
+            message = errorData?.message || errorData?.detail || `Error ${status}`;
         }
       }
     } else if (error.request) {
@@ -264,26 +246,16 @@ function handleAuthFailure(): void {
 
 // Helper functions for different HTTP methods
 export const api = {
-  get: <T = unknown>(url: string, config?: AxiosRequestConfig) =>
-    apiClient.get<T>(url, config),
+  get: <T = unknown>(url: string, config?: AxiosRequestConfig) => apiClient.get<T>(url, config),
 
-  post: <T = unknown>(
-    url: string,
-    data?: unknown,
-    config?: AxiosRequestConfig
-  ) => apiClient.post<T>(url, data, config),
+  post: <T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig) =>
+    apiClient.post<T>(url, data, config),
 
-  put: <T = unknown>(
-    url: string,
-    data?: unknown,
-    config?: AxiosRequestConfig
-  ) => apiClient.put<T>(url, data, config),
+  put: <T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig) =>
+    apiClient.put<T>(url, data, config),
 
-  patch: <T = unknown>(
-    url: string,
-    data?: unknown,
-    config?: AxiosRequestConfig
-  ) => apiClient.patch<T>(url, data, config),
+  patch: <T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig) =>
+    apiClient.patch<T>(url, data, config),
 
   delete: <T = unknown>(url: string, config?: AxiosRequestConfig) =>
     apiClient.delete<T>(url, config),

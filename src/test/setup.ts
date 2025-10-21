@@ -8,20 +8,26 @@
  * - Next.js router mocks
  */
 
-import '@testing-library/jest-dom';
+import "@testing-library/jest-dom";
 
 // Only import and setup MSW if it's not mocked
-let server: { listen: (options: { onUnhandledRequest: string }) => void; resetHandlers: () => void; close: () => void } | undefined;
+let server:
+  | {
+      listen: (options: { onUnhandledRequest: string }) => void;
+      resetHandlers: () => void;
+      close: () => void;
+    }
+  | undefined;
 try {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const mswModule = require('../mocks/server');
+  const mswModule = require("../mocks/server");
   server = mswModule.server;
 
   // Establish API mocking before all tests
   beforeAll(() => {
     // Start MSW server to intercept network requests
     server?.listen({
-      onUnhandledRequest: 'warn', // Warn about unhandled requests instead of erroring
+      onUnhandledRequest: "warn", // Warn about unhandled requests instead of erroring
     });
   });
 
@@ -90,11 +96,11 @@ const sessionStorageMock = (() => {
 })();
 
 // Assign mocks to global
-Object.defineProperty(window, 'localStorage', {
+Object.defineProperty(window, "localStorage", {
   value: localStorageMock,
 });
 
-Object.defineProperty(window, 'sessionStorage', {
+Object.defineProperty(window, "sessionStorage", {
   value: sessionStorageMock,
 });
 
@@ -105,7 +111,7 @@ beforeEach(() => {
 });
 
 // Mock Next.js navigation
-jest.mock('next/navigation', () => ({
+jest.mock("next/navigation", () => ({
   useRouter: () => ({
     push: jest.fn(),
     replace: jest.fn(),
@@ -114,7 +120,7 @@ jest.mock('next/navigation', () => ({
     forward: jest.fn(),
     refresh: jest.fn(),
   }),
-  usePathname: () => '/',
+  usePathname: () => "/",
   useSearchParams: () => new URLSearchParams(),
   redirect: jest.fn(),
 }));
@@ -127,10 +133,10 @@ const originalLog = console.log;
 beforeAll(() => {
   console.log = (...args: unknown[]) => {
     // Filter out API client debug logs in tests
-    if (typeof args[0] === 'string' && args[0] === 'error') {
+    if (typeof args[0] === "string" && args[0] === "error") {
       return;
     }
-    if (typeof args[0] === 'string' && args[0] === 'errorData') {
+    if (typeof args[0] === "string" && args[0] === "errorData") {
       return;
     }
     originalLog.call(console, ...args);
@@ -138,28 +144,31 @@ beforeAll(() => {
 
   console.error = (...args: unknown[]) => {
     // Filter out expected errors from tests
-    if (typeof args[0] === 'string') {
+    if (typeof args[0] === "string") {
       // React/testing warnings
       if (
-        args[0].includes('Warning: ReactDOM.render') ||
-        args[0].includes('Warning: useLayoutEffect') ||
-        args[0].includes('Not implemented: HTMLFormElement.prototype.requestSubmit')
+        args[0].includes("Warning: ReactDOM.render") ||
+        args[0].includes("Warning: useLayoutEffect") ||
+        args[0].includes("Not implemented: HTMLFormElement.prototype.requestSubmit")
       ) {
         return;
       }
       // Expected token manager errors (testing error handling)
-      if (args[0].includes('Error loading tokens')) {
+      if (args[0].includes("Error loading tokens")) {
         return;
       }
       // Expected API errors from tests
-      if (args[0].includes('❌ API Error')) {
+      if (args[0].includes("❌ API Error")) {
         return;
       }
     }
     // jsdom navigation warnings (expected in tests)
-    if (typeof args[0] === 'object' && args[0] !== null && 'message' in args[0]) {
+    if (typeof args[0] === "object" && args[0] !== null && "message" in args[0]) {
       const errorObj = args[0] as { message?: string };
-      if (typeof errorObj.message === 'string' && errorObj.message.includes('Not implemented: navigation')) {
+      if (
+        typeof errorObj.message === "string" &&
+        errorObj.message.includes("Not implemented: navigation")
+      ) {
         return;
       }
     }
@@ -168,9 +177,9 @@ beforeAll(() => {
 
   console.warn = (...args: unknown[]) => {
     // Filter out expected warnings
-    if (typeof args[0] === 'string') {
+    if (typeof args[0] === "string") {
       // MSW setup warnings (expected when MSW is mocked)
-      if (args[0].includes('MSW not available')) {
+      if (args[0].includes("MSW not available")) {
         return;
       }
     }

@@ -4,8 +4,8 @@
  * Configures Mock Service Worker for Node.js (Jest) environment
  */
 
-import { setupServer } from 'msw/node';
-import { handlers } from './handlers';
+import { setupServer } from "msw/node";
+import { handlers } from "./handlers";
 
 /**
  * MSW Server for Node.js testing environment

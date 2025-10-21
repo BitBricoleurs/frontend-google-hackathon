@@ -78,12 +78,8 @@ export default function PatientsPage() {
               <UsersThree className="h-6 w-6 text-primary-foreground" weight="fill" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold text-card-foreground">
-                Patient Records
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                Manage and view patient information
-              </p>
+              <h1 className="text-xl font-semibold text-card-foreground">Patient Records</h1>
+              <p className="text-sm text-muted-foreground">Manage and view patient information</p>
             </div>
           </div>
 
@@ -141,11 +137,7 @@ export default function PatientsPage() {
   );
 }
 
-function PatientCard({
-  patient,
-}: {
-  patient: (typeof mockPatients)[0];
-}) {
+function PatientCard({ patient }: { patient: (typeof mockPatients)[0] }) {
   const statusColors = {
     stable: "bg-green-500/10 text-green-500 border-green-500/20",
     monitoring: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
@@ -163,12 +155,8 @@ function PatientCard({
 
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
-              <h3 className="text-lg font-semibold text-card-foreground">
-                {patient.name}
-              </h3>
-              <span className="text-sm text-muted-foreground">
-                {patient.age} years old
-              </span>
+              <h3 className="text-lg font-semibold text-card-foreground">{patient.name}</h3>
+              <span className="text-sm text-muted-foreground">{patient.age} years old</span>
               <span
                 className={cn(
                   "px-2.5 py-1 rounded-full text-xs font-medium border",

@@ -113,9 +113,7 @@ export class QueueAPI {
    * Request body: Omit<QueueCall, 'id'>
    * Response format: { success: boolean, data: QueueCall }
    */
-  static async addCall(
-    call: Omit<QueueCall, "id">
-  ): Promise<QueueCall> {
+  static async addCall(call: Omit<QueueCall, "id">): Promise<QueueCall> {
     if (USE_MOCK_DATA) {
       await new Promise((resolve) => setTimeout(resolve, 200));
       const newCall: QueueCall = {
@@ -189,10 +187,7 @@ export class QueueAPI {
    * Request body: Partial<QueueCall>
    * Response format: { success: boolean, data: QueueCall }
    */
-  static async updateCall(
-    callId: string,
-    updates: Partial<QueueCall>
-  ): Promise<QueueCall> {
+  static async updateCall(callId: string, updates: Partial<QueueCall>): Promise<QueueCall> {
     if (USE_MOCK_DATA) {
       await new Promise((resolve) => setTimeout(resolve, 150));
       // In real implementation, this would merge with existing data from server
@@ -234,12 +229,10 @@ export class QueueAPI {
       return {
         totalCalls: MOCK_CALLS.length,
         averageWaitTime: Math.floor(
-          MOCK_CALLS.reduce((acc, call) => acc + call.waitTime, 0) /
-            MOCK_CALLS.length
+          MOCK_CALLS.reduce((acc, call) => acc + call.waitTime, 0) / MOCK_CALLS.length
         ),
         aiConnected: MOCK_CALLS.filter((c) => c.aiStatus === "connected").length,
-        aiConnecting: MOCK_CALLS.filter((c) => c.aiStatus === "connecting")
-          .length,
+        aiConnecting: MOCK_CALLS.filter((c) => c.aiStatus === "connecting").length,
         pending: MOCK_CALLS.filter((c) => c.aiStatus === "pending").length,
         highPriority: MOCK_CALLS.filter((c) => c.priority === "high").length,
       };
@@ -275,9 +268,7 @@ export class QueueAPI {
    * WebSocket Endpoint: ws://localhost:3001/queue/subscribe
    * Message format: { type: 'update' | 'add' | 'remove', data: QueueCall | string }
    */
-  static subscribeToQueueUpdates(
-    onUpdate: (calls: QueueCall[]) => void
-  ): () => void {
+  static subscribeToQueueUpdates(onUpdate: (calls: QueueCall[]) => void): () => void {
     if (USE_MOCK_DATA) {
       // In mock mode, we don't establish a real WebSocket connection
       console.log("Mock mode: WebSocket subscription not established");

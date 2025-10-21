@@ -62,7 +62,8 @@ export default function LoginPage() {
             <div>
               <label
                 htmlFor="employeeId"
-                className="block text-sm font-medium text-foreground mb-2">
+                className="block text-sm font-medium text-foreground mb-2"
+              >
                 Employee ID
               </label>
               <input
@@ -96,7 +97,8 @@ export default function LoginPage() {
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                  disabled={isLoading}>
+                  disabled={isLoading}
+                >
                   {showPassword ? (
                     <EyeSlashIcon className="h-5 w-5" weight="bold" />
                   ) : (
@@ -109,7 +111,8 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full rounded-lg bg-primary px-4 py-3 text-primary-foreground font-medium hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity">
+              className="w-full rounded-lg bg-primary px-4 py-3 text-primary-foreground font-medium hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+            >
               {isLoading ? (
                 <span className="flex items-center justify-center gap-2">
                   <CircleNotchIcon className="h-5 w-5 animate-spin" weight="bold" />
