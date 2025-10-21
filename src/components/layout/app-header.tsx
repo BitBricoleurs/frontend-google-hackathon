@@ -11,7 +11,7 @@ import {
 } from "@phosphor-icons/react";
 import { useAuth } from "@/contexts/auth-context";
 import { cn } from "@/lib/utils";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,

@@ -7,7 +7,6 @@ import {
   HouseSimple,
   Phone,
   UsersThree,
-  LockIcon,
   ChartBar,
   Shield,
   GearSix,
@@ -15,7 +14,6 @@ import {
 } from "@phosphor-icons/react";
 import { useAuth } from "@/contexts/auth-context";
 import { cn } from "@/lib/utils";
-import { NavUser } from "./nav-user";
 import { motion, AnimatePresence } from "framer-motion";
 
 const navigationItems = [
@@ -66,29 +64,12 @@ const adminMenuItems = [
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const [isAdminHovered, setIsAdminHovered] = React.useState(false);
 
   // Check if we're on an admin page
   const isOnAdminPage = pathname?.startsWith("/admin");
   const isAdminExpanded = isAdminHovered || isOnAdminPage;
-
-  // Get initials from user name
-  const getInitials = (name?: string) => {
-    if (!name) return "??";
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-  };
-
-  const userData = {
-    name: user?.fullName || "Unknown User",
-    email: `${user?.employeeId || ""} • ${user?.role || ""}`,
-    initials: getInitials(user?.fullName),
-  };
 
   return (
     <aside className="flex h-screen w-[120px] flex-col border-r border-sidebar-border bg-sidebar">

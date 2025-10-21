@@ -7,11 +7,9 @@
 import { http, HttpResponse } from 'msw';
 import {
   mockUsers,
-  mockCredentials,
   mockTokens,
   mockErrorResponses,
   validateCredentials,
-  getUserByEmployeeId,
 } from '../data/auth.fixtures';
 import type { LoginRequest, ChangePasswordRequest } from '@/types/auth';
 

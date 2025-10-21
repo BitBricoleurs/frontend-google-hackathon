@@ -7,7 +7,6 @@
 import { http, HttpResponse } from 'msw';
 import {
   mockUsersList,
-  mockCreatedUsers,
   mockUserErrors,
   filterUsers,
   paginateUsers,
@@ -47,7 +46,11 @@ export const usersHandlers = [
     const search = url.searchParams.get('search');
 
     // Build filters
-    const filters: any = {};
+    const filters: {
+      role?: 'ADMIN' | 'OPERATOR';
+      isActive?: boolean;
+      search?: string;
+    } = {};
     if (role) filters.role = role;
     if (isActive !== null) filters.isActive = isActive === 'true';
     if (search) filters.search = search;

@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 export interface QueuedCallProps {
   id: string;
   fullName: string;
-  phoneNumber: string;
+  phoneNumber?: string;
   priority: "high" | "medium" | "low";
   waitTime: number; // in seconds
   keywords: string[];
@@ -24,7 +24,6 @@ export interface QueuedCallProps {
 export function QueuedCall({
   id,
   fullName,
-  phoneNumber,
   priority,
   waitTime,
   keywords,

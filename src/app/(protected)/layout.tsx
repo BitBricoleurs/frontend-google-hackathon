@@ -13,7 +13,6 @@ import {
   ImperativePanelHandle,
 } from "@/components/ui/resizable";
 import { CaretLeftIcon } from "@phosphor-icons/react";
-import { QueryClientProvider } from "@tanstack/react-query";
 import { QueryProvider } from "@/contexts/query-context";
 
 function ProtectedLayoutContent({ children }: { children: React.ReactNode }) {

@@ -7,7 +7,6 @@
 import {
   User,
   PaginatedResponse,
-  CreateUserRequest,
   UpdateUserRequest,
   ResetPasswordRequest,
 } from '@/types/user';

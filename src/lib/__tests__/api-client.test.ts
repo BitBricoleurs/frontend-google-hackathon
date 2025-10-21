@@ -24,7 +24,9 @@ jest.mock('sonner', () => ({
 }));
 
 // Mock window.location
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 delete (window as any).location;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 window.location = { href: '', pathname: '/' } as any;
 
 describe('API Client', () => {

@@ -11,8 +11,9 @@
 import '@testing-library/jest-dom';
 
 // Only import and setup MSW if it's not mocked
-let server: any;
+let server: { listen: (options: { onUnhandledRequest: string }) => void; resetHandlers: () => void; close: () => void } | undefined;
 try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const mswModule = require('../mocks/server');
   server = mswModule.server;
 
@@ -33,7 +34,7 @@ try {
   afterAll(() => {
     server?.close();
   });
-} catch (error) {
+} catch {
   // MSW is mocked or not available - skip setup (this is expected for some tests)
   // Silently continue - no need to warn
 }
@@ -124,7 +125,7 @@ const originalWarn = console.warn;
 const originalLog = console.log;
 
 beforeAll(() => {
-  console.log = (...args: any[]) => {
+  console.log = (...args: unknown[]) => {
     // Filter out API client debug logs in tests
     if (typeof args[0] === 'string' && args[0] === 'error') {
       return;
@@ -135,7 +136,7 @@ beforeAll(() => {
     originalLog.call(console, ...args);
   };
 
-  console.error = (...args: any[]) => {
+  console.error = (...args: unknown[]) => {
     // Filter out expected errors from tests
     if (typeof args[0] === 'string') {
       // React/testing warnings
@@ -154,15 +155,18 @@ beforeAll(() => {
       if (args[0].includes('❌ API Error')) {
         return;
       }
-      // jsdom navigation warnings (expected in tests)
-      if (args[0] instanceof Error && args[0].message?.includes('Not implemented: navigation')) {
+    }
+    // jsdom navigation warnings (expected in tests)
+    if (typeof args[0] === 'object' && args[0] !== null && 'message' in args[0]) {
+      const errorObj = args[0] as { message?: string };
+      if (typeof errorObj.message === 'string' && errorObj.message.includes('Not implemented: navigation')) {
         return;
       }
     }
     originalError.call(console, ...args);
   };
 
-  console.warn = (...args: any[]) => {
+  console.warn = (...args: unknown[]) => {
     // Filter out expected warnings
     if (typeof args[0] === 'string') {
       // MSW setup warnings (expected when MSW is mocked)

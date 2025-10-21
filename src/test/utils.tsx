@@ -25,11 +25,6 @@ export function createTestQueryClient() {
         retry: false, // Don't retry failed mutations in tests
       },
     },
-    logger: {
-      log: console.log,
-      warn: console.warn,
-      error: () => {}, // Suppress error logs in tests
-    },
   });
 }
 

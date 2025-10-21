@@ -7,7 +7,6 @@
 import { http, HttpResponse } from 'msw';
 import {
   mockQueueCalls,
-  mockCreatedCall,
   calculateQueueStats,
 } from '../data/queue.fixtures';
 import { mockErrorResponses } from '../data/auth.fixtures';
