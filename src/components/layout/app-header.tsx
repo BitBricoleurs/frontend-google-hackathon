@@ -10,7 +10,7 @@ import {
   SignOutIcon,
 } from "@phosphor-icons/react";
 import { useAuth } from "@/contexts/auth-context";
-import { cn } from "@/lib/utils";
+import { cn, formatDateTime } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -36,37 +36,7 @@ export function AppHeader() {
     return () => clearInterval(timer);
   }, []);
 
-  // Format date and time
-  const formatDateTime = (date: Date) => {
-    const days = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
-    const months = [
-      "JAN",
-      "FEB",
-      "MAR",
-      "APR",
-      "MAY",
-      "JUN",
-      "JUL",
-      "AUG",
-      "SEP",
-      "OCT",
-      "NOV",
-      "DEC",
-    ];
-
-    const dayName = days[date.getDay()];
-    const monthName = months[date.getMonth()];
-    const day = date.getDate();
-    const hours = date.getHours().toString().padStart(2, "0");
-    const minutes = date.getMinutes().toString().padStart(2, "0");
-
-    return {
-      date: `${dayName}, ${monthName} ${day}`,
-      time: `${hours}:${minutes}`,
-    };
-  };
-
-  const { date, time } = formatDateTime(currentTime);
+  const { date, time } = formatDateTime(currentTime as Date);
 
   // Get initials from user name
   const getInitials = (name?: string) => {
@@ -141,10 +111,7 @@ export function AppHeader() {
                   {getInitials(user?.fullName)}
                 </AvatarFallback>
               </Avatar>
-              <DotsThreeVerticalIcon
-                className="h-4 w-4 text-muted-foreground"
-                weight="bold"
-              />
+              <DotsThreeVerticalIcon className="h-4 w-4 text-muted-foreground" weight="bold" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-56" align="end" sideOffset={8}>
@@ -156,9 +123,7 @@ export function AppHeader() {
                   </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">
-                    {user?.fullName || "Unknown User"}
-                  </span>
+                  <span className="truncate font-medium">{user?.fullName || "Unknown User"}</span>
                   <span className="text-muted-foreground truncate text-xs">
                     {user?.employeeId} • {user?.role}
                   </span>

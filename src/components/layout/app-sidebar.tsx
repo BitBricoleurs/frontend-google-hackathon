@@ -15,6 +15,7 @@ import {
 import { useAuth } from "@/contexts/auth-context";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
 
 const navigationItems = [
   {
@@ -75,14 +76,13 @@ export function AppSidebar() {
     <aside className="flex h-screen w-[120px] flex-col border-r border-sidebar-border bg-sidebar">
       {/* Logo Header */}
       <div className="flex h-16 items-center justify-center border-b border-sidebar-border px-4">
-        <img src="/full-logo.png" alt="Urgentis" className="h-8 w-auto" />
+        <Image src="/full-logo.png" alt="Urgentis" className="h-8 w-auto" width={32} height={32} />
       </div>
 
       {/* Navigation */}
       <nav className="flex-1 p-3 space-y-2">
         {navigationItems.map((item) => {
-          const isActive =
-            pathname === item.href || pathname?.startsWith(item.href + "/");
+          const isActive = pathname === item.href || pathname?.startsWith(item.href + "/");
           const Icon = item.icon;
 
           return (
@@ -96,13 +96,8 @@ export function AppSidebar() {
                   : "text-sidebar-foreground hover:bg-primary/10 hover:text-sidebar-accent-foreground"
               )}
             >
-              <Icon
-                className="h-6 w-6"
-                weight={isActive ? "fill" : "regular"}
-              />
-              <span className="text-xs font-medium text-center">
-                {item.name}
-              </span>
+              <Icon className="h-6 w-6" weight={isActive ? "fill" : "regular"} />
+              <span className="text-xs font-medium text-center">{item.name}</span>
             </Link>
           );
         })}
@@ -111,10 +106,7 @@ export function AppSidebar() {
       {/* Admin Panel - Only visible to admins */}
       {user?.role === "ADMIN" && (
         <footer
-          className={cn(
-            "border-sidebar-border p-3 relative",
-            !isAdminExpanded && "border-t"
-          )}
+          className={cn("border-sidebar-border p-3 relative", !isAdminExpanded && "border-t")}
           onMouseEnter={() => setIsAdminHovered(true)}
           onMouseLeave={() => setIsAdminHovered(false)}
         >
@@ -128,9 +120,7 @@ export function AppSidebar() {
                 className="absolute bottom-full left-0 right-0 pt-3 px-3 space-y-2 bg-transparent border-sidebar-border border-t"
               >
                 {adminMenuItems.slice(1).map((item) => {
-                  const isActive =
-                    pathname === item.href ||
-                    pathname?.startsWith(item.href + "/");
+                  const isActive = pathname === item.href || pathname?.startsWith(item.href + "/");
                   const Icon = item.icon;
 
                   return (
@@ -144,13 +134,8 @@ export function AppSidebar() {
                           : "text-sidebar-foreground hover:bg-accent/10"
                       )}
                     >
-                      <Icon
-                        className="h-6 w-6"
-                        weight={isActive ? "fill" : "regular"}
-                      />
-                      <span className="text-xs font-medium text-center">
-                        {item.name}
-                      </span>
+                      <Icon className="h-6 w-6" weight={isActive ? "fill" : "regular"} />
+                      <span className="text-xs font-medium text-center">{item.name}</span>
                     </Link>
                   );
                 })}
