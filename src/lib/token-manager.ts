@@ -102,12 +102,7 @@ export class TokenManager {
   // Update access token after refresh
   updateAccessToken(accessToken: string, expiresIn: number): void {
     if (this.tokenData) {
-      this.setTokens(
-        accessToken,
-        expiresIn,
-        this.tokenData.rememberMe,
-        this.tokenData.userId
-      );
+      this.setTokens(accessToken, expiresIn, this.tokenData.rememberMe, this.tokenData.userId);
     }
   }
 

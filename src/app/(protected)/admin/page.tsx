@@ -103,12 +103,7 @@ function AdminContent() {
             title="Security & Audit"
             description="Security settings and audit logs"
             icon="shield"
-            actions={[
-              "Access logs",
-              "Security policies",
-              "Data retention",
-              "Compliance reports",
-            ]}
+            actions={["Access logs", "Security policies", "Data retention", "Compliance reports"]}
           />
         </div>
       </main>
@@ -147,9 +142,7 @@ function AdminStatCard({
     <div className="rounded-lg bg-card p-6 shadow-sm border border-border">
       <div className="flex items-center justify-between mb-2">
         <p className="text-sm font-medium text-muted-foreground">{title}</p>
-        <div className={`rounded-lg p-2 ${colorClasses[color]}`}>
-          {icons[icon]}
-        </div>
+        <div className={`rounded-lg p-2 ${colorClasses[color]}`}>{icons[icon]}</div>
       </div>
       <p className="text-2xl font-bold text-card-foreground">{value}</p>
       <p className="text-xs text-muted-foreground mt-1">{change}</p>
@@ -169,27 +162,10 @@ function AdminSection({
   actions: string[];
 }) {
   const icons = {
-    users: (
-      <UsersFourIcon
-        className="h-6 w-6 text-muted-foreground"
-        weight="duotone"
-      />
-    ),
-    settings: (
-      <GearIcon className="h-6 w-6 text-muted-foreground" weight="duotone" />
-    ),
-    chart: (
-      <ChartBarIcon
-        className="h-6 w-6 text-muted-foreground"
-        weight="duotone"
-      />
-    ),
-    shield: (
-      <ShieldCheckIcon
-        className="h-6 w-6 text-muted-foreground"
-        weight="duotone"
-      />
-    ),
+    users: <UsersFourIcon className="h-6 w-6 text-muted-foreground" weight="duotone" />,
+    settings: <GearIcon className="h-6 w-6 text-muted-foreground" weight="duotone" />,
+    chart: <ChartBarIcon className="h-6 w-6 text-muted-foreground" weight="duotone" />,
+    shield: <ShieldCheckIcon className="h-6 w-6 text-muted-foreground" weight="duotone" />,
   };
 
   return (
@@ -199,20 +175,12 @@ function AdminSection({
           {icons[icon]}
         </div>
         <div className="flex-1">
-          <h3 className="text-lg font-semibold text-card-foreground mb-1">
-            {title}
-          </h3>
+          <h3 className="text-lg font-semibold text-card-foreground mb-1">{title}</h3>
           <p className="text-sm text-muted-foreground mb-4">{description}</p>
           <ul className="space-y-2">
             {actions.map((action, index) => (
-              <li
-                key={index}
-                className="flex items-center gap-2 text-sm text-foreground"
-              >
-                <CaretRightIcon
-                  className="h-4 w-4 text-muted-foreground"
-                  weight="bold"
-                />
+              <li key={index} className="flex items-center gap-2 text-sm text-foreground">
+                <CaretRightIcon className="h-4 w-4 text-muted-foreground" weight="bold" />
                 {action}
               </li>
             ))}

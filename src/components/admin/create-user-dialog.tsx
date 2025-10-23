@@ -48,10 +48,7 @@ export function CreateUserDialog({ children }: CreateUserDialogProps) {
 
   const isPasswordValid = Object.values(passwordValidation).every(Boolean);
   const isFormValid =
-    employeeId.trim() !== "" &&
-    fullName.trim() !== "" &&
-    password !== "" &&
-    isPasswordValid;
+    employeeId.trim() !== "" && fullName.trim() !== "" && password !== "" && isPasswordValid;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -170,10 +167,7 @@ export function CreateUserDialog({ children }: CreateUserDialogProps) {
                     met={passwordValidation.lowercase}
                     text="One lowercase letter"
                   />
-                  <PasswordRequirement
-                    met={passwordValidation.number}
-                    text="One number"
-                  />
+                  <PasswordRequirement met={passwordValidation.number} text="One number" />
                 </div>
               )}
             </div>
@@ -196,9 +190,7 @@ export function CreateUserDialog({ children }: CreateUserDialogProps) {
                   <SelectItem value="ADMIN">Admin</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">
-                Admins have full system access
-              </p>
+              <p className="text-xs text-muted-foreground">Admins have full system access</p>
             </div>
           </div>
 
@@ -211,10 +203,7 @@ export function CreateUserDialog({ children }: CreateUserDialogProps) {
             >
               Cancel
             </Button>
-            <Button
-              type="submit"
-              disabled={!isFormValid || createUserMutation.isPending}
-            >
+            <Button type="submit" disabled={!isFormValid || createUserMutation.isPending}>
               {createUserMutation.isPending ? "Creating..." : "Create User"}
             </Button>
           </DialogFooter>
@@ -232,9 +221,7 @@ function PasswordRequirement({ met, text }: { met: boolean; text: string }) {
       ) : (
         <XCircle className="h-3.5 w-3.5 text-muted-foreground" weight="fill" />
       )}
-      <span className={met ? "text-primary" : "text-muted-foreground"}>
-        {text}
-      </span>
+      <span className={met ? "text-primary" : "text-muted-foreground"}>{text}</span>
     </div>
   );
 }

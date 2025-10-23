@@ -11,10 +11,7 @@ interface ProtectedRouteProps {
   requiredRole?: "OPERATOR" | "ADMIN"; // Keep "admin" for backward compatibility
 }
 
-export function ProtectedRoute({
-  children,
-  requiredRole,
-}: ProtectedRouteProps) {
+export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
   const { user, isLoading, isAuthenticated } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
@@ -52,28 +49,18 @@ export function ProtectedRoute({
         <div className="w-full max-w-md text-center">
           <div className="mb-8 flex justify-center">
             <div className="flex h-20 w-20 items-center justify-center rounded-full bg-red-100">
-              <ShieldCheckIcon
-                className="h-10 w-10 text-red-500"
-                weight="duotone"
-              />
+              <ShieldCheckIcon className="h-10 w-10 text-red-500" weight="duotone" />
             </div>
           </div>
 
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">
-            Access Denied
-          </h1>
-          <p className="text-gray-600 mb-2">
-            You don&apos;t have permission to access this page.
-          </p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">Access Denied</h1>
+          <p className="text-gray-600 mb-2">You don&apos;t have permission to access this page.</p>
           <p className="text-sm text-gray-500 mb-8">
-            Your role:{" "}
-            <span className="font-medium text-gray-700">{user?.role}</span>
+            Your role: <span className="font-medium text-gray-700">{user?.role}</span>
             {requiredRole && (
               <>
                 {" • "}Required role:{" "}
-                <span className="font-medium text-gray-700">
-                  {requiredRole}
-                </span>
+                <span className="font-medium text-gray-700">{requiredRole}</span>
               </>
             )}
           </p>

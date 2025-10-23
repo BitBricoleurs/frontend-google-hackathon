@@ -9,11 +9,7 @@ type CollapsibleSectionProps = {
   children: React.ReactNode;
 };
 
-const CollapsibleSection = ({
-  title,
-  defaultOpen = false,
-  children,
-}: CollapsibleSectionProps) => {
+const CollapsibleSection = ({ title, defaultOpen = false, children }: CollapsibleSectionProps) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
@@ -24,15 +20,9 @@ const CollapsibleSection = ({
       >
         <h2 className="text-base font-medium text-foreground">{title}</h2>
         {isOpen ? (
-          <CaretUpIcon
-            className="h-5 w-5 text-muted-foreground"
-            weight="bold"
-          />
+          <CaretUpIcon className="h-5 w-5 text-muted-foreground" weight="bold" />
         ) : (
-          <CaretDownIcon
-            className="h-5 w-5 text-muted-foreground"
-            weight="bold"
-          />
+          <CaretDownIcon className="h-5 w-5 text-muted-foreground" weight="bold" />
         )}
       </button>
       {isOpen && <div className="px-6 pb-6">{children}</div>}
@@ -54,29 +44,17 @@ export default function DesignSystemPage() {
       "--card": styles.getPropertyValue("--card").trim(),
       "--card-foreground": styles.getPropertyValue("--card-foreground").trim(),
       "--popover": styles.getPropertyValue("--popover").trim(),
-      "--popover-foreground": styles
-        .getPropertyValue("--popover-foreground")
-        .trim(),
+      "--popover-foreground": styles.getPropertyValue("--popover-foreground").trim(),
       "--primary": styles.getPropertyValue("--primary").trim(),
-      "--primary-foreground": styles
-        .getPropertyValue("--primary-foreground")
-        .trim(),
+      "--primary-foreground": styles.getPropertyValue("--primary-foreground").trim(),
       "--secondary": styles.getPropertyValue("--secondary").trim(),
-      "--secondary-foreground": styles
-        .getPropertyValue("--secondary-foreground")
-        .trim(),
+      "--secondary-foreground": styles.getPropertyValue("--secondary-foreground").trim(),
       "--muted": styles.getPropertyValue("--muted").trim(),
-      "--muted-foreground": styles
-        .getPropertyValue("--muted-foreground")
-        .trim(),
+      "--muted-foreground": styles.getPropertyValue("--muted-foreground").trim(),
       "--accent": styles.getPropertyValue("--accent").trim(),
-      "--accent-foreground": styles
-        .getPropertyValue("--accent-foreground")
-        .trim(),
+      "--accent-foreground": styles.getPropertyValue("--accent-foreground").trim(),
       "--destructive": styles.getPropertyValue("--destructive").trim(),
-      "--destructive-foreground": styles
-        .getPropertyValue("--destructive-foreground")
-        .trim(),
+      "--destructive-foreground": styles.getPropertyValue("--destructive-foreground").trim(),
       "--border": styles.getPropertyValue("--border").trim(),
       "--input": styles.getPropertyValue("--input").trim(),
       "--ring": styles.getPropertyValue("--ring").trim(),
@@ -161,9 +139,7 @@ ${Object.entries(tokens)
 
     return (
       <div className="flex items-center gap-4 py-3">
-        <label className="text-sm font-normal text-foreground min-w-[180px]">
-          {label}
-        </label>
+        <label className="text-sm font-normal text-foreground min-w-[180px]">{label}</label>
         <div className="flex-1 flex items-center gap-3">
           <div
             className="w-12 h-12 rounded-lg border border-border shadow-sm flex-shrink-0"
@@ -211,11 +187,7 @@ ${Object.entries(tokens)
               max={max}
               className="w-20 px-3 py-1.5 text-sm bg-background border border-border rounded-lg text-foreground text-right focus:outline-none focus:ring-2 focus:ring-ring"
             />
-            {unit && (
-              <span className="text-sm text-muted-foreground min-w-[2rem]">
-                {unit}
-              </span>
-            )}
+            {unit && <span className="text-sm text-muted-foreground min-w-[2rem]">{unit}</span>}
           </div>
         </div>
         <input
@@ -263,10 +235,7 @@ ${Object.entries(tokens)
             <span className="text-xs text-muted-foreground">MD</span>
           </div>
           <div className="text-center">
-            <div
-              className="w-full h-20 bg-primary mx-auto mb-2"
-              style={{ borderRadius: value }}
-            />
+            <div className="w-full h-20 bg-primary mx-auto mb-2" style={{ borderRadius: value }} />
             <span className="text-xs text-muted-foreground">LG</span>
           </div>
           <div className="text-center">
@@ -309,9 +278,7 @@ ${Object.entries(tokens)
     return (
       <div className="space-y-1">
         <div className="py-3">
-          <label className="text-sm font-normal text-foreground mb-3 block">
-            Shadow Color
-          </label>
+          <label className="text-sm font-normal text-foreground mb-3 block">Shadow Color</label>
           <div className="flex items-center gap-3">
             <div
               className="w-12 h-12 rounded-lg border border-border shadow-sm flex-shrink-0"
@@ -397,9 +364,7 @@ ${Object.entries(tokens)
         {/* Sidebar */}
         <div className="w-[420px] border-r border-border bg-card overflow-y-auto h-screen">
           <div className="p-6 border-b border-border">
-            <h1 className="text-xl font-semibold text-foreground mb-1">
-              Design System
-            </h1>
+            <h1 className="text-xl font-semibold text-foreground mb-1">Design System</h1>
             <p className="text-sm text-muted-foreground">
               Customize your medical app design tokens
             </p>
@@ -424,30 +389,21 @@ ${Object.entries(tokens)
           <CollapsibleSection title="Primary Colors" defaultOpen>
             <div className="space-y-1">
               <ColorControl name="--primary" label="Primary" />
-              <ColorControl
-                name="--primary-foreground"
-                label="Primary Foreground"
-              />
+              <ColorControl name="--primary-foreground" label="Primary Foreground" />
             </div>
           </CollapsibleSection>
 
           <CollapsibleSection title="Secondary Colors">
             <div className="space-y-1">
               <ColorControl name="--secondary" label="Secondary" />
-              <ColorControl
-                name="--secondary-foreground"
-                label="Secondary Foreground"
-              />
+              <ColorControl name="--secondary-foreground" label="Secondary Foreground" />
             </div>
           </CollapsibleSection>
 
           <CollapsibleSection title="Accent Colors">
             <div className="space-y-1">
               <ColorControl name="--accent" label="Accent" />
-              <ColorControl
-                name="--accent-foreground"
-                label="Accent Foreground"
-              />
+              <ColorControl name="--accent-foreground" label="Accent Foreground" />
             </div>
           </CollapsibleSection>
 
@@ -468,30 +424,21 @@ ${Object.entries(tokens)
           <CollapsibleSection title="Popover Colors">
             <div className="space-y-1">
               <ColorControl name="--popover" label="Popover" />
-              <ColorControl
-                name="--popover-foreground"
-                label="Popover Foreground"
-              />
+              <ColorControl name="--popover-foreground" label="Popover Foreground" />
             </div>
           </CollapsibleSection>
 
           <CollapsibleSection title="Muted Colors">
             <div className="space-y-1">
               <ColorControl name="--muted" label="Muted" />
-              <ColorControl
-                name="--muted-foreground"
-                label="Muted Foreground"
-              />
+              <ColorControl name="--muted-foreground" label="Muted Foreground" />
             </div>
           </CollapsibleSection>
 
           <CollapsibleSection title="Destructive Colors">
             <div className="space-y-1">
               <ColorControl name="--destructive" label="Destructive" />
-              <ColorControl
-                name="--destructive-foreground"
-                label="Destructive Foreground"
-              />
+              <ColorControl name="--destructive-foreground" label="Destructive Foreground" />
             </div>
           </CollapsibleSection>
 
@@ -530,9 +477,7 @@ ${Object.entries(tokens)
         <div className="flex-1 p-8 overflow-y-auto h-screen">
           <div className="max-w-5xl mx-auto space-y-6">
             <div>
-              <h2 className="text-2xl font-bold text-foreground mb-1">
-                Component Preview
-              </h2>
+              <h2 className="text-2xl font-bold text-foreground mb-1">Component Preview</h2>
               <p className="text-muted-foreground">
                 See how your design tokens look in real components
               </p>
@@ -541,9 +486,7 @@ ${Object.entries(tokens)
             <div className="grid grid-cols-2 gap-6">
               {/* Buttons */}
               <div className="bg-card p-6 rounded-lg border border-border">
-                <h3 className="text-sm font-semibold text-card-foreground mb-4">
-                  Buttons
-                </h3>
+                <h3 className="text-sm font-semibold text-card-foreground mb-4">Buttons</h3>
                 <div className="space-y-3">
                   <button className="w-full px-4 py-2 bg-primary text-primary-foreground font-medium rounded-lg hover:opacity-90 transition-opacity">
                     Primary Button
@@ -559,9 +502,7 @@ ${Object.entries(tokens)
 
               {/* Cards */}
               <div className="bg-card p-6 rounded-lg border border-border">
-                <h3 className="text-sm font-semibold text-card-foreground mb-4">
-                  Cards
-                </h3>
+                <h3 className="text-sm font-semibold text-card-foreground mb-4">Cards</h3>
                 <div className="space-y-3">
                   <div className="p-4 bg-background border border-border rounded-lg">
                     <p className="text-sm text-foreground">Background Card</p>
@@ -570,18 +511,14 @@ ${Object.entries(tokens)
                     <p className="text-sm text-muted-foreground">Muted Card</p>
                   </div>
                   <div className="p-4 bg-accent rounded-lg">
-                    <p className="text-sm text-accent-foreground">
-                      Accent Card
-                    </p>
+                    <p className="text-sm text-accent-foreground">Accent Card</p>
                   </div>
                 </div>
               </div>
 
               {/* Inputs */}
               <div className="bg-card p-6 rounded-lg border border-border">
-                <h3 className="text-sm font-semibold text-card-foreground mb-4">
-                  Form Inputs
-                </h3>
+                <h3 className="text-sm font-semibold text-card-foreground mb-4">Form Inputs</h3>
                 <div className="space-y-3">
                   <input
                     type="text"
@@ -598,17 +535,11 @@ ${Object.entries(tokens)
 
               {/* Typography */}
               <div className="bg-card p-6 rounded-lg border border-border">
-                <h3 className="text-sm font-semibold text-card-foreground mb-4">
-                  Typography
-                </h3>
+                <h3 className="text-sm font-semibold text-card-foreground mb-4">Typography</h3>
                 <div className="space-y-2">
-                  <p className="text-foreground font-semibold">
-                    Foreground Text
-                  </p>
+                  <p className="text-foreground font-semibold">Foreground Text</p>
                   <p className="text-muted-foreground">Muted Foreground</p>
-                  <p className="text-card-foreground text-sm">
-                    Card Foreground
-                  </p>
+                  <p className="text-card-foreground text-sm">Card Foreground</p>
                 </div>
               </div>
             </div>
@@ -627,21 +558,15 @@ ${Object.entries(tokens)
                   <div className="grid grid-cols-3 gap-4 mb-6">
                     <div className="p-4 bg-chart-1/10 rounded-lg border border-border">
                       <p className="text-2xl font-bold text-chart-1">342</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Total Calls
-                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">Total Calls</p>
                     </div>
                     <div className="p-4 bg-chart-3/10 rounded-lg border border-border">
                       <p className="text-2xl font-bold text-chart-3">12</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        AI Agents
-                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">AI Agents</p>
                     </div>
                     <div className="p-4 bg-primary/10 rounded-lg border border-border">
                       <p className="text-2xl font-bold text-primary">98%</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Success Rate
-                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">Success Rate</p>
                     </div>
                   </div>
 

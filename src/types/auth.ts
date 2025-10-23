@@ -72,6 +72,16 @@ export interface AuthErrorResponse {
   path: string;
 }
 
+/**
+ * Token data stored in localStorage/sessionStorage
+ */
+export interface TokenData {
+  accessToken: string;
+  expiresAt: number;
+  rememberMe: boolean;
+  userId?: number;
+}
+
 // Legacy type alias for backward compatibility
 // TODO: Remove once all components are updated
 export type ResponderProfile = User;

@@ -19,11 +19,7 @@ import {
 } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from "@/components/ui/resizable";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 
 // Mock call data
 const mockCallData = {
@@ -116,9 +112,7 @@ export default function ActiveCallPage() {
               </div>
             </div>
             <div>
-              <h1 className="text-xl font-semibold text-card-foreground">
-                Active Emergency Call
-              </h1>
+              <h1 className="text-xl font-semibold text-card-foreground">Active Emergency Call</h1>
               <p className="text-sm text-muted-foreground">
                 {mockCallData.callerName} • {mockCallData.callerId}
               </p>
@@ -147,19 +141,11 @@ export default function ActiveCallPage() {
               <div className="border-b border-border bg-card px-6 py-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <RecordIcon
-                      className="h-5 w-5 text-red-500 animate-pulse"
-                      weight="fill"
-                    />
-                    <span className="text-sm font-medium text-foreground">
-                      Live Transcript
-                    </span>
+                    <RecordIcon className="h-5 w-5 text-red-500 animate-pulse" weight="fill" />
+                    <span className="text-sm font-medium text-foreground">Live Transcript</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <TranslateIcon
-                      className="h-4 w-4 text-muted-foreground"
-                      weight="duotone"
-                    />
+                    <TranslateIcon className="h-4 w-4 text-muted-foreground" weight="duotone" />
                     <span className="text-xs text-muted-foreground">
                       Auto-translating from Spanish
                     </span>
@@ -209,10 +195,7 @@ export default function ActiveCallPage() {
                     {isSpeakerOn ? (
                       <SpeakerHighIcon className="h-6 w-6" weight="fill" />
                     ) : (
-                      <SpeakerSimpleSlashIcon
-                        className="h-6 w-6"
-                        weight="fill"
-                      />
+                      <SpeakerSimpleSlashIcon className="h-6 w-6" weight="fill" />
                     )}
                   </button>
                 </div>
@@ -228,13 +211,8 @@ export default function ActiveCallPage() {
               {/* AI Header */}
               <div className="border-b border-border bg-card px-6 py-3">
                 <div className="flex items-center gap-2">
-                  <BrainIcon
-                    className="h-5 w-5 text-primary"
-                    weight="duotone"
-                  />
-                  <span className="text-sm font-medium text-foreground">
-                    AI Insights
-                  </span>
+                  <BrainIcon className="h-5 w-5 text-primary" weight="duotone" />
+                  <span className="text-sm font-medium text-foreground">AI Insights</span>
                 </div>
               </div>
 
@@ -247,31 +225,20 @@ export default function ActiveCallPage() {
                 {/* Caller Info Card */}
                 <div className="rounded-lg border border-border bg-card p-4">
                   <div className="flex items-center gap-2 mb-3">
-                    <UserCircleIcon
-                      className="h-5 w-5 text-primary"
-                      weight="duotone"
-                    />
-                    <span className="text-sm font-medium text-foreground">
-                      Caller Information
-                    </span>
+                    <UserCircleIcon className="h-5 w-5 text-primary" weight="duotone" />
+                    <span className="text-sm font-medium text-foreground">Caller Information</span>
                   </div>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Phone:</span>
-                      <span className="text-foreground font-medium">
-                        {mockCallData.callerId}
-                      </span>
+                      <span className="text-foreground font-medium">{mockCallData.callerId}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Location:</span>
-                      <span className="text-foreground font-medium">
-                        Downtown
-                      </span>
+                      <span className="text-foreground font-medium">Downtown</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">
-                        Previous Calls:
-                      </span>
+                      <span className="text-muted-foreground">Previous Calls:</span>
                       <span className="text-foreground font-medium">0</span>
                     </div>
                   </div>
@@ -285,11 +252,7 @@ export default function ActiveCallPage() {
   );
 }
 
-function TranscriptMessage({
-  message,
-}: {
-  message: (typeof mockTranscript)[0];
-}) {
+function TranscriptMessage({ message }: { message: (typeof mockTranscript)[0] }) {
   const isAI = message.speaker === "ai-agent";
 
   const emotionColors = {
@@ -303,9 +266,7 @@ function TranscriptMessage({
       <div
         className={cn(
           "flex h-8 w-8 items-center justify-center rounded-full shrink-0",
-          isAI
-            ? "bg-primary text-primary-foreground"
-            : "bg-secondary text-secondary-foreground"
+          isAI ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"
         )}
       >
         {isAI ? (
@@ -315,20 +276,10 @@ function TranscriptMessage({
         )}
       </div>
 
-      <div
-        className={cn(
-          "flex flex-col gap-1",
-          isAI ? "items-start" : "items-end",
-          "flex-1"
-        )}
-      >
+      <div className={cn("flex flex-col gap-1", isAI ? "items-start" : "items-end", "flex-1")}>
         <div className="flex items-center gap-2">
-          <span className="text-xs font-medium text-foreground">
-            {isAI ? "Gaia" : "Caller"}
-          </span>
-          <span className="text-xs text-muted-foreground">
-            {message.timestamp}
-          </span>
+          <span className="text-xs font-medium text-foreground">{isAI ? "Gaia" : "Caller"}</span>
+          <span className="text-xs text-muted-foreground">{message.timestamp}</span>
           {!isAI && (
             <span
               className={cn(
@@ -343,9 +294,7 @@ function TranscriptMessage({
         <div
           className={cn(
             "rounded-lg px-4 py-2 max-w-[80%]",
-            isAI
-              ? "bg-primary/10 text-foreground"
-              : "bg-secondary text-secondary-foreground"
+            isAI ? "bg-primary/10 text-foreground" : "bg-secondary text-secondary-foreground"
           )}
         >
           <p className="text-sm">{message.text}</p>
@@ -381,15 +330,11 @@ function InsightCard({ insight }: { insight: (typeof aiInsights)[0] }) {
         <IconIcon
           className={cn(
             "h-5 w-5",
-            severityIconColors[
-              insight.severity as keyof typeof severityIconColors
-            ]
+            severityIconColors[insight.severity as keyof typeof severityIconColors]
           )}
           weight="duotone"
         />
-        <span className="text-sm font-medium text-foreground">
-          {insight.title}
-        </span>
+        <span className="text-sm font-medium text-foreground">{insight.title}</span>
       </div>
       <ul className="space-y-1">
         {insight.details.map((detail, index) => (

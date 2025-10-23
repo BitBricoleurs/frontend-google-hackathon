@@ -59,18 +59,13 @@ export default function DashboardPage() {
           <div className="text-center">
             <div className="mb-4 flex justify-center">
               <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-accent">
-                <LightningIcon
-                  className="h-8 w-8 text-accent-foreground"
-                  weight="fill"
-                />
+                <LightningIcon className="h-8 w-8 text-accent-foreground" weight="fill" />
               </div>
             </div>
-            <h2 className="text-2xl font-bold text-card-foreground mb-2">
-              Dashboard Coming Soon
-            </h2>
+            <h2 className="text-2xl font-bold text-card-foreground mb-2">Dashboard Coming Soon</h2>
             <p className="text-muted-foreground mb-6">
-              Your emergency response dashboard will display real-time call
-              data, AI agent conversations, and patient files.
+              Your emergency response dashboard will display real-time call data, AI agent
+              conversations, and patient files.
             </p>
             <div className="space-y-2 text-left max-w-md mx-auto">
               <FeatureItem text="Current Call Management" />
@@ -117,13 +112,9 @@ function StatCard({
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm font-medium text-muted-foreground">{title}</p>
-          <p className="mt-2 text-3xl font-bold text-card-foreground">
-            {value}
-          </p>
+          <p className="mt-2 text-3xl font-bold text-card-foreground">{value}</p>
         </div>
-        <div className={`rounded-lg p-3 ${colorClasses[color]}`}>
-          {icons[icon]}
-        </div>
+        <div className={`rounded-lg p-3 ${colorClasses[color]}`}>{icons[icon]}</div>
       </div>
     </div>
   );

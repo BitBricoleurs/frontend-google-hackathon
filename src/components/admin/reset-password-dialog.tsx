@@ -22,11 +22,7 @@ interface ResetPasswordDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-export function ResetPasswordDialog({
-  user,
-  open,
-  onOpenChange,
-}: ResetPasswordDialogProps) {
+export function ResetPasswordDialog({ user, open, onOpenChange }: ResetPasswordDialogProps) {
   const [newPassword, setNewPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
@@ -83,8 +79,8 @@ export function ResetPasswordDialog({
             {/* Warning message */}
             <div className="rounded-lg bg-orange-50 dark:bg-orange-950 border border-orange-300 dark:border-orange-700 p-4">
               <p className="text-sm text-orange-900 dark:text-orange-100 font-medium">
-                ⚠️ The user will be able to log in with this new password immediately.
-                Make sure to communicate it securely.
+                ⚠️ The user will be able to log in with this new password immediately. Make sure to
+                communicate it securely.
               </p>
             </div>
 
@@ -129,10 +125,7 @@ export function ResetPasswordDialog({
                     met={passwordValidation.lowercase}
                     text="One lowercase letter"
                   />
-                  <PasswordRequirement
-                    met={passwordValidation.number}
-                    text="One number"
-                  />
+                  <PasswordRequirement met={passwordValidation.number} text="One number" />
                 </div>
               )}
             </div>
@@ -169,9 +162,7 @@ function PasswordRequirement({ met, text }: { met: boolean; text: string }) {
       ) : (
         <XCircle className="h-3.5 w-3.5 text-muted-foreground" weight="fill" />
       )}
-      <span className={met ? "text-primary" : "text-muted-foreground"}>
-        {text}
-      </span>
+      <span className={met ? "text-primary" : "text-muted-foreground"}>{text}</span>
     </div>
   );
 }

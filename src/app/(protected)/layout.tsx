@@ -13,7 +13,6 @@ import {
   ImperativePanelHandle,
 } from "@/components/ui/resizable";
 import { CaretLeftIcon } from "@phosphor-icons/react";
-import { QueryClientProvider } from "@tanstack/react-query";
 import { QueryProvider } from "@/contexts/query-context";
 
 function ProtectedLayoutContent({ children }: { children: React.ReactNode }) {
@@ -58,11 +57,7 @@ function ProtectedLayoutContent({ children }: { children: React.ReactNode }) {
               onCollapse={() => setIsQueueCollapsed(true)}
               onExpand={() => setIsQueueCollapsed(false)}
             >
-              <FloatingQueue
-                calls={calls}
-                panelRef={queuePanelRef}
-                onTakeCall={handleTakeCall}
-              />
+              <FloatingQueue calls={calls} panelRef={queuePanelRef} onTakeCall={handleTakeCall} />
             </ResizablePanel>
           </ResizablePanelGroup>
 
@@ -82,11 +77,7 @@ function ProtectedLayoutContent({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function ProtectedLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function ProtectedLayout({ children }: { children: React.ReactNode }) {
   return (
     <ProtectedRoute>
       <QueryProvider>

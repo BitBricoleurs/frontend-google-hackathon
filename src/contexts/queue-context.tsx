@@ -67,24 +67,19 @@ export function QueueProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // Update a call via API
-  const updateCall = useCallback(
-    async (callId: string, updates: Partial<QueueCall>) => {
-      setError(null);
-      try {
-        const updatedCall = await QueueAPI.updateCall(callId, updates);
-        setCalls((prev) =>
-          prev.map((call) =>
-            call.id === callId ? { ...call, ...updatedCall } : call
-          )
-        );
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to update call");
-        console.error("Error updating call:", err);
-        throw err;
-      }
-    },
-    []
-  );
+  const updateCall = useCallback(async (callId: string, updates: Partial<QueueCall>) => {
+    setError(null);
+    try {
+      const updatedCall = await QueueAPI.updateCall(callId, updates);
+      setCalls((prev) =>
+        prev.map((call) => (call.id === callId ? { ...call, ...updatedCall } : call))
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update call");
+      console.error("Error updating call:", err);
+      throw err;
+    }
+  }, []);
 
   // Update wait times locally (runs every second)
   const updateWaitTimes = useCallback(() => {
