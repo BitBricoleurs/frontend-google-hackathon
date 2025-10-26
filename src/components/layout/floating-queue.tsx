@@ -3,17 +3,7 @@
 import { Phone, CaretRightIcon, ClockIcon } from "@phosphor-icons/react";
 import * as ResizablePrimitive from "react-resizable-panels";
 import { QueuedCall } from "./queued-call";
-
-export interface QueueCall {
-  id: string;
-  callerName: string;
-  phoneNumber: string;
-  waitTime: number; // in seconds
-  aiStatus: "connected" | "connecting" | "pending";
-  priority: "high" | "medium" | "low";
-  keywords: string[];
-  emotionalState: "calm" | "distress" | "panic" | "anxious";
-}
+import { QueueCall } from "@/types/queue";
 
 interface FloatingQueueProps {
   calls?: QueueCall[];
@@ -82,6 +72,7 @@ export function FloatingQueue({ calls = [], panelRef, onTakeCall }: FloatingQueu
               <QueuedCall
                 key={call.id}
                 id={call.id}
+                callId={call.callId}
                 fullName={call.callerName}
                 phoneNumber={call.phoneNumber}
                 priority={call.priority}

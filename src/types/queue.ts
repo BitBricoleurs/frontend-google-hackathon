@@ -130,6 +130,7 @@ export interface GetQueueEntryResponse {
  */
 export interface QueueCall {
   id: string;
+  callId: string; // The actual call ID for fetching transcript
   callerName: string;
   phoneNumber: string;
   waitTime: number; // in seconds
@@ -210,6 +211,7 @@ export function queueEntryToQueueCall(entry: QueueEntry): QueueCall {
 
   return {
     id: entry.id,
+    callId: entry.callId, // The actual call ID for transcript fetching
     callerName: entry.location || "Unknown Caller",
     phoneNumber: entry.callId, // Using callId as phone number proxy
     waitTime,

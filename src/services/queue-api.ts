@@ -1,6 +1,4 @@
-import { QueueCall } from "@/components/layout/floating-queue";
-import type { QueueEntry } from "@/types/queue";
-import { queueEntryToQueueCall } from "@/types/queue";
+import { QueueCall, QueueEntry, queueEntryToQueueCall } from "@/types/queue";
 import * as queueApi from "@/api/queue";
 import { tokenManager } from "@/lib/token-manager";
 
@@ -8,6 +6,7 @@ import { tokenManager } from "@/lib/token-manager";
 const MOCK_CALLS: QueueCall[] = [
   {
     id: "call-1",
+    callId: "mock-call-id-1",
     callerName: "Marie Dubois",
     phoneNumber: "+33 1 23 45 67 89",
     waitTime: 125,
@@ -18,6 +17,7 @@ const MOCK_CALLS: QueueCall[] = [
   },
   {
     id: "call-2",
+    callId: "mock-call-id-2",
     callerName: "Jean Martin",
     phoneNumber: "+33 1 98 76 54 32",
     waitTime: 85,
@@ -28,6 +28,7 @@ const MOCK_CALLS: QueueCall[] = [
   },
   {
     id: "call-3",
+    callId: "mock-call-id-3",
     callerName: "Sophie Bernard",
     phoneNumber: "+33 1 55 44 33 22",
     waitTime: 45,
@@ -38,6 +39,7 @@ const MOCK_CALLS: QueueCall[] = [
   },
   {
     id: "call-4",
+    callId: "mock-call-id-4",
     callerName: "Pierre Lefebvre",
     phoneNumber: "+33 1 11 22 33 44",
     waitTime: 20,
@@ -48,6 +50,7 @@ const MOCK_CALLS: QueueCall[] = [
   },
   {
     id: "call-5",
+    callId: "mock-call-id-5",
     callerName: "Isabelle Moreau",
     phoneNumber: "+33 1 66 77 88 99",
     waitTime: 180,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   PhoneCallIcon,
   PhoneXIcon,
@@ -18,10 +18,11 @@ import {
   RecordIcon,
 } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
+import { useActiveCall } from "@/contexts/active-call-context";
 
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 
-// Mock call data
+// Mock call data for fallback
 const mockCallData = {
   callerId: "+1 (555) 789-0123",
   callerName: "Unknown Caller",
@@ -30,45 +31,6 @@ const mockCallData = {
   status: "active",
   priority: "high",
 };
-
-// Mock transcript
-const mockTranscript = [
-  {
-    id: 1,
-    speaker: "caller",
-    text: "Hello? I need help! My father collapsed!",
-    timestamp: "00:00:12",
-    emotion: "distress",
-  },
-  {
-    id: 2,
-    speaker: "ai-agent",
-    text: "I understand you need emergency assistance. Can you tell me your exact location?",
-    timestamp: "00:00:18",
-    emotion: "calm",
-  },
-  {
-    id: 3,
-    speaker: "caller",
-    text: "We're at 123 Main Street, apartment 4B. He's not breathing!",
-    timestamp: "00:00:24",
-    emotion: "panic",
-  },
-  {
-    id: 4,
-    speaker: "ai-agent",
-    text: "Emergency services have been dispatched to 123 Main Street, apartment 4B. Help is on the way. Is your father conscious?",
-    timestamp: "00:00:32",
-    emotion: "calm",
-  },
-  {
-    id: 5,
-    speaker: "caller",
-    text: "No, he's not responding! What should I do?",
-    timestamp: "00:00:38",
-    emotion: "distress",
-  },
-];
 
 // Mock AI insights
 const aiInsights = [
@@ -95,9 +57,65 @@ const aiInsights = [
   },
 ];
 
+function formatDuration(seconds: number | null): string {
+  if (!seconds) return "00:00:00";
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+}
+
 export default function ActiveCallPage() {
   const [isMuted, setIsMuted] = useState(false);
   const [isSpeakerOn, setIsSpeakerOn] = useState(true);
+  const { callId, transcript, isLoading, error, callStatus, callDuration, startedAt } =
+    useActiveCall();
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading call transcript...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <div className="text-center">
+          <WarningCircleIcon className="h-12 w-12 text-red-500 mx-auto mb-4" weight="duotone" />
+          <p className="text-foreground font-medium mb-2">Failed to load call</p>
+          <p className="text-muted-foreground text-sm">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show empty state if no callId
+  if (!callId) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <div className="text-center">
+          <PhoneCallIcon
+            className="h-12 w-12 text-muted-foreground mx-auto mb-4"
+            weight="duotone"
+          />
+          <p className="text-foreground font-medium mb-2">No active call</p>
+          <p className="text-muted-foreground text-sm">
+            Select a call from the queue to view details
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const displayDuration = callDuration ? formatDuration(callDuration) : mockCallData.duration;
+  const displayStatus = callStatus || mockCallData.status;
 
   return (
     <div className="flex h-full flex-col">
@@ -106,23 +124,25 @@ export default function ActiveCallPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="relative flex h-12 w-12 items-center justify-center">
-              <div className="absolute inset-0 animate-ping rounded-full bg-red-500 opacity-75" />
+              {displayStatus === "active" && (
+                <div className="absolute inset-0 animate-ping rounded-full bg-red-500 opacity-75" />
+              )}
               <div className="relative flex h-12 w-12 items-center justify-center rounded-full bg-red-500">
                 <PhoneCallIcon className="h-6 w-6 text-white" weight="fill" />
               </div>
             </div>
             <div>
-              <h1 className="text-xl font-semibold text-card-foreground">Active Emergency Call</h1>
-              <p className="text-sm text-muted-foreground">
-                {mockCallData.callerName} • {mockCallData.callerId}
-              </p>
+              <h1 className="text-xl font-semibold text-card-foreground">
+                {displayStatus === "active" ? "Active" : "Past"} Emergency Call
+              </h1>
+              <p className="text-sm text-muted-foreground">Call ID: {callId}</p>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 text-sm font-medium text-foreground">
               <ClockIcon className="h-4 w-4" weight="bold" />
-              <span>{mockCallData.duration}</span>
+              <span>{displayDuration}</span>
             </div>
             <span className="px-3 py-1 rounded-full text-xs font-medium bg-red-500/10 text-red-500 border border-red-500/20">
               HIGH PRIORITY
@@ -156,9 +176,15 @@ export default function ActiveCallPage() {
 
                 {/* Transcript Messages */}
                 <div className="flex-1 overflow-auto p-6 space-y-4">
-                  {mockTranscript.map((message) => (
-                    <TranscriptMessage key={message.id} message={message} />
-                  ))}
+                  {transcript.length > 0 ? (
+                    transcript.map((message) => (
+                      <TranscriptMessage key={message.index} message={message} />
+                    ))
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-muted-foreground">
+                      <p>No transcript available</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </ResizablePanel>
@@ -256,14 +282,17 @@ export default function ActiveCallPage() {
   );
 }
 
-function TranscriptMessage({ message }: { message: (typeof mockTranscript)[0] }) {
-  const isAI = message.speaker === "ai-agent";
+interface TranscriptMessageType {
+  index: number;
+  timestamp: string | null;
+  speaker: string;
+  text: string;
+  confidence: number | null;
+}
 
-  const emotionColors = {
-    calm: "text-green-500",
-    distress: "text-yellow-500",
-    panic: "text-red-500",
-  };
+function TranscriptMessage({ message }: { message: TranscriptMessageType }) {
+  const isAI =
+    message.speaker.toLowerCase().includes("agent") || message.speaker.toLowerCase().includes("ai");
 
   return (
     <div className={cn("flex gap-3", isAI ? "flex-row" : "flex-row-reverse")}>
@@ -282,16 +311,15 @@ function TranscriptMessage({ message }: { message: (typeof mockTranscript)[0] })
 
       <div className={cn("flex flex-col gap-1", isAI ? "items-start" : "items-end", "flex-1")}>
         <div className="flex items-center gap-2">
-          <span className="text-xs font-medium text-foreground">{isAI ? "Gaia" : "Caller"}</span>
-          <span className="text-xs text-muted-foreground">{message.timestamp}</span>
-          {!isAI && (
-            <span
-              className={cn(
-                "text-xs font-medium",
-                emotionColors[message.emotion as keyof typeof emotionColors]
-              )}
-            >
-              {message.emotion}
+          <span className="text-xs font-medium text-foreground">
+            {isAI ? "AI Agent" : message.speaker}
+          </span>
+          {message.timestamp && (
+            <span className="text-xs text-muted-foreground">{message.timestamp}</span>
+          )}
+          {message.confidence !== null && (
+            <span className="text-xs text-muted-foreground">
+              ({Math.round(message.confidence * 100)}%)
             </span>
           )}
         </div>

@@ -4,7 +4,7 @@
  * Mock data for queue management tests
  */
 
-import { QueueCall } from "@/components/layout/floating-queue";
+import { QueueCall } from "@/types/queue";
 import { QueueStats } from "@/services/queue-api";
 
 /**
@@ -13,6 +13,7 @@ import { QueueStats } from "@/services/queue-api";
 export const mockQueueCalls: QueueCall[] = [
   {
     id: "call-1",
+    callId: "mock-call-id-1",
     callerName: "Marie Dubois",
     phoneNumber: "+33 1 23 45 67 89",
     waitTime: 125,
@@ -23,6 +24,7 @@ export const mockQueueCalls: QueueCall[] = [
   },
   {
     id: "call-2",
+    callId: "mock-call-id-2",
     callerName: "Jean Martin",
     phoneNumber: "+33 1 98 76 54 32",
     waitTime: 85,
@@ -33,6 +35,7 @@ export const mockQueueCalls: QueueCall[] = [
   },
   {
     id: "call-3",
+    callId: "mock-call-id-3",
     callerName: "Sophie Bernard",
     phoneNumber: "+33 1 55 44 33 22",
     waitTime: 45,
@@ -43,6 +46,7 @@ export const mockQueueCalls: QueueCall[] = [
   },
   {
     id: "call-4",
+    callId: "mock-call-id-4",
     callerName: "Pierre Lefebvre",
     phoneNumber: "+33 1 11 22 33 44",
     waitTime: 20,
@@ -53,6 +57,7 @@ export const mockQueueCalls: QueueCall[] = [
   },
   {
     id: "call-5",
+    callId: "mock-call-id-5",
     callerName: "Isabelle Moreau",
     phoneNumber: "+33 1 66 77 88 99",
     waitTime: 180,
@@ -73,6 +78,7 @@ export const mockEmptyQueue: QueueCall[] = [];
  */
 export const mockHighPriorityCall: QueueCall = {
   id: "call-high-1",
+  callId: "mock-call-id-high-1",
   callerName: "Emergency Caller",
   phoneNumber: "+33 1 99 99 99 99",
   waitTime: 300,
@@ -86,6 +92,7 @@ export const mockHighPriorityCall: QueueCall = {
  * Mock new call to be added
  */
 export const mockNewCall: Omit<QueueCall, "id"> = {
+  callId: "mock-call-id-new",
   callerName: "New Caller",
   phoneNumber: "+33 1 12 34 56 78",
   waitTime: 0,

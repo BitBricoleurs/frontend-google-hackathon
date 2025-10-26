@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { RobotIcon, ClockIcon, PhoneIcon, WarningCircleIcon } from "@phosphor-icons/react";
+import { useRouter } from "next/navigation";
+import { RobotIcon, ClockIcon, PhoneIcon, WarningCircleIcon, EyeIcon } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 
 export interface QueuedCallProps {
   id: string;
+  callId: string; // The actual call ID for fetching transcript
   fullName: string;
   phoneNumber?: string;
   priority: "high" | "medium" | "low";
@@ -18,6 +20,7 @@ export interface QueuedCallProps {
 
 export function QueuedCall({
   id,
+  callId,
   fullName,
   priority,
   waitTime,
@@ -27,6 +30,8 @@ export function QueuedCall({
   onTakeCall,
 }: QueuedCallProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const router = useRouter();
+
   const formatWaitTime = (seconds: number): string => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
@@ -147,7 +152,7 @@ export function QueuedCall({
 
   return (
     <div
-      className="relative rounded-xl border border-border bg-card p-4 transition-all hover:shadow-lg"
+      className="relative rounded-xl border border-border bg-card p-4 transition-all duration-300 ease-in-out hover:shadow-lg hover:border-accent/50"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -177,6 +182,21 @@ export function QueuedCall({
             </div>
           </div>
         </div>
+
+        {/* View Call Button */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            router.push(`/active-call?callId=${callId}`);
+          }}
+          className={cn(
+            "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-accent/50 bg-background text-accent shadow-sm hover:bg-accent/10 hover:border-accent transition-all duration-200 ease-in-out",
+            isHovered ? "opacity-100 scale-100" : "opacity-0 scale-90 pointer-events-none"
+          )}
+          aria-label="View call"
+        >
+          <EyeIcon weight="fill" className="h-4 w-4" />
+        </button>
       </div>
 
       {/* AI Status with Progress Bar */}
@@ -224,8 +244,10 @@ export function QueuedCall({
           <button
             onClick={handleTakeCall}
             className={cn(
-              "flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground shadow-sm hover:bg-accent/90 transition-all hover:scale-105",
-              isHovered ? "opacity-100" : "opacity-0 pointer-events-none"
+              "flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground shadow-sm hover:bg-accent/90 transition-all duration-200 ease-in-out",
+              isHovered
+                ? "opacity-100 translate-x-0"
+                : "opacity-0 translate-x-2 pointer-events-none"
             )}
           >
             <PhoneIcon weight="fill" className="h-4 w-4" />

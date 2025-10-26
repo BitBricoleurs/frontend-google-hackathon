@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
-import { QueueCall } from "@/components/layout/floating-queue";
+import { QueueCall } from "@/types/queue";
 import { QueueAPI, QueueStats } from "@/services/queue-api";
 
 interface QueueContextType {
