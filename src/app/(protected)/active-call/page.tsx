@@ -132,121 +132,125 @@ export default function ActiveCallPage() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-hidden">
-        <ResizablePanelGroup direction="horizontal" className="h-full">
-          <ResizablePanel defaultSize={66} minSize={30}>
-            {/* Left Column - Call Transcript */}
-            <div className="flex h-full flex-col ">
-              {/* Transcript Header */}
-              <div className="border-b border-border bg-card px-6 py-3">
-                <div className="flex items-center justify-between">
+      <div className="flex-1 overflow-hidden flex flex-col">
+        <div className="flex-1 overflow-hidden">
+          <ResizablePanelGroup direction="horizontal" className="h-full">
+            <ResizablePanel defaultSize={66} minSize={30}>
+              {/* Left Column - Call Transcript */}
+              <div className="flex h-full flex-col ">
+                {/* Transcript Header */}
+                <div className="border-b border-border bg-card px-6 py-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <RecordIcon className="h-5 w-5 text-red-500 animate-pulse" weight="fill" />
+                      <span className="text-sm font-medium text-foreground">Live Transcript</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <TranslateIcon className="h-4 w-4 text-muted-foreground" weight="duotone" />
+                      <span className="text-xs text-muted-foreground">
+                        Auto-translating from Spanish
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Transcript Messages */}
+                <div className="flex-1 overflow-auto p-6 space-y-4">
+                  {mockTranscript.map((message) => (
+                    <TranscriptMessage key={message.id} message={message} />
+                  ))}
+                </div>
+              </div>
+            </ResizablePanel>
+
+            <ResizableHandle withHandle />
+
+            <ResizablePanel defaultSize={34} minSize={20}>
+              {/* Right Column - AI Insights */}
+              <div className="flex h-full flex-col bg-muted/30">
+                {/* AI Header */}
+                <div className="border-b border-border bg-card px-6 py-3">
                   <div className="flex items-center gap-2">
-                    <RecordIcon className="h-5 w-5 text-red-500 animate-pulse" weight="fill" />
-                    <span className="text-sm font-medium text-foreground">Live Transcript</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <TranslateIcon className="h-4 w-4 text-muted-foreground" weight="duotone" />
-                    <span className="text-xs text-muted-foreground">
-                      Auto-translating from Spanish
-                    </span>
+                    <BrainIcon className="h-5 w-5 text-primary" weight="duotone" />
+                    <span className="text-sm font-medium text-foreground">AI Insights</span>
                   </div>
                 </div>
-              </div>
 
-              {/* Transcript Messages */}
-              <div className="flex-1 overflow-auto p-6 space-y-4">
-                {mockTranscript.map((message) => (
-                  <TranscriptMessage key={message.id} message={message} />
-                ))}
-              </div>
+                {/* Insights List */}
+                <div className="flex-1 overflow-auto p-4 space-y-4">
+                  {aiInsights.map((insight, index) => (
+                    <InsightCard key={index} insight={insight} />
+                  ))}
 
-              {/* Call Controls */}
-              <div className="border-t border-border bg-card px-6 py-4">
-                <div className="flex items-center justify-center gap-4">
-                  <button
-                    onClick={() => setIsMuted(!isMuted)}
-                    className={cn(
-                      "flex h-12 w-12 items-center justify-center rounded-full transition-colors",
-                      isMuted
-                        ? "bg-red-500 text-white hover:bg-red-600"
-                        : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                    )}
-                  >
-                    {isMuted ? (
-                      <MicrophoneSlashIcon className="h-6 w-6" weight="fill" />
-                    ) : (
-                      <MicrophoneIcon className="h-6 w-6" weight="fill" />
-                    )}
-                  </button>
-
-                  <button className="flex h-16 w-16 items-center justify-center rounded-full bg-red-500 text-white hover:bg-red-600 transition-colors shadow-lg">
-                    <PhoneXIcon className="h-8 w-8" weight="fill" />
-                  </button>
-
-                  <button
-                    onClick={() => setIsSpeakerOn(!isSpeakerOn)}
-                    className={cn(
-                      "flex h-12 w-12 items-center justify-center rounded-full transition-colors",
-                      isSpeakerOn
-                        ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                        : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                    )}
-                  >
-                    {isSpeakerOn ? (
-                      <SpeakerHighIcon className="h-6 w-6" weight="fill" />
-                    ) : (
-                      <SpeakerSimpleSlashIcon className="h-6 w-6" weight="fill" />
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </ResizablePanel>
-
-          <ResizableHandle withHandle />
-
-          <ResizablePanel defaultSize={34} minSize={20}>
-            {/* Right Column - AI Insights */}
-            <div className="flex h-full flex-col bg-muted/30">
-              {/* AI Header */}
-              <div className="border-b border-border bg-card px-6 py-3">
-                <div className="flex items-center gap-2">
-                  <BrainIcon className="h-5 w-5 text-primary" weight="duotone" />
-                  <span className="text-sm font-medium text-foreground">AI Insights</span>
-                </div>
-              </div>
-
-              {/* Insights List */}
-              <div className="flex-1 overflow-auto p-4 space-y-4">
-                {aiInsights.map((insight, index) => (
-                  <InsightCard key={index} insight={insight} />
-                ))}
-
-                {/* Caller Info Card */}
-                <div className="rounded-lg border border-border bg-card p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <UserCircleIcon className="h-5 w-5 text-primary" weight="duotone" />
-                    <span className="text-sm font-medium text-foreground">Caller Information</span>
-                  </div>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Phone:</span>
-                      <span className="text-foreground font-medium">{mockCallData.callerId}</span>
+                  {/* Caller Info Card */}
+                  <div className="rounded-lg border border-border bg-card p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <UserCircleIcon className="h-5 w-5 text-primary" weight="duotone" />
+                      <span className="text-sm font-medium text-foreground">
+                        Caller Information
+                      </span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Location:</span>
-                      <span className="text-foreground font-medium">Downtown</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Previous Calls:</span>
-                      <span className="text-foreground font-medium">0</span>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Phone:</span>
+                        <span className="text-foreground font-medium">{mockCallData.callerId}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Location:</span>
+                        <span className="text-foreground font-medium">Downtown</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Previous Calls:</span>
+                        <span className="text-foreground font-medium">0</span>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </ResizablePanel>
-        </ResizablePanelGroup>
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        </div>
+
+        {/* Call Controls - Full Width Bottom Bar */}
+        <div className="border-t border-border bg-card px-6 py-4">
+          <div className="flex items-center justify-center gap-4">
+            <button
+              onClick={() => setIsMuted(!isMuted)}
+              className={cn(
+                "flex h-12 w-12 items-center justify-center rounded-full transition-colors",
+                isMuted
+                  ? "bg-red-500 text-white hover:bg-red-600"
+                  : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+              )}
+            >
+              {isMuted ? (
+                <MicrophoneSlashIcon className="h-6 w-6" weight="fill" />
+              ) : (
+                <MicrophoneIcon className="h-6 w-6" weight="fill" />
+              )}
+            </button>
+
+            <button className="flex h-16 w-16 items-center justify-center rounded-full bg-red-500 text-white hover:bg-red-600 transition-colors shadow-lg">
+              <PhoneXIcon className="h-8 w-8" weight="fill" />
+            </button>
+
+            <button
+              onClick={() => setIsSpeakerOn(!isSpeakerOn)}
+              className={cn(
+                "flex h-12 w-12 items-center justify-center rounded-full transition-colors",
+                isSpeakerOn
+                  ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                  : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+              )}
+            >
+              {isSpeakerOn ? (
+                <SpeakerHighIcon className="h-6 w-6" weight="fill" />
+              ) : (
+                <SpeakerSimpleSlashIcon className="h-6 w-6" weight="fill" />
+              )}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
