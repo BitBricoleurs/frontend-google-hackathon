@@ -1,9 +1,10 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import * as transcriptApi from "@/api/transcript";
 import { toast } from "sonner";
+import { QueueAPI } from "@/services/queue-api";
 
 interface TranscriptMessage {
   index: number;
@@ -25,6 +26,7 @@ interface ActiveCallContextType {
   patientInfo: object | null;
   fetchTranscript: (callId: string) => Promise<void>;
   clearCall: () => void;
+  isConnectedToWebSocket: boolean;
 }
 
 const ActiveCallContext = createContext<ActiveCallContextType | undefined>(undefined);
@@ -44,6 +46,9 @@ export function ActiveCallProvider({ children }: ActiveCallProviderProps) {
   const [startedAt, setStartedAt] = useState<string | null>(null);
   const [endedAt, setEndedAt] = useState<string | null>(null);
   const [patientInfo, setPatientInfo] = useState<object | null>(null);
+  const [isConnectedToWebSocket, setIsConnectedToWebSocket] = useState(false);
+
+  const currentCallIdRef = useRef<string | null>(null);
 
   // Fetch transcript when callId changes from URL params
   useEffect(() => {
@@ -92,6 +97,50 @@ export function ActiveCallProvider({ children }: ActiveCallProviderProps) {
     setPatientInfo(null);
   };
 
+  // WebSocket subscription for real-time transcript updates
+  useEffect(() => {
+    if (!callId) {
+      return;
+    }
+
+    console.log(`📝 [ACTIVE-CALL] Setting up transcript subscription for call ${callId}`);
+    setIsConnectedToWebSocket(true);
+    currentCallIdRef.current = callId;
+
+    const unsubscribe = QueueAPI.subscribeToTranscript(callId, (transcriptData: string) => {
+      if (!transcriptData) {
+        return;
+      }
+
+      if (typeof transcriptData === "string") {
+        const lines = transcriptData.split("\n").filter((line) => line.trim());
+        const messages: TranscriptMessage[] = lines.map((line, index) => {
+          const speakerMatch = line.match(/^(.*?):\s*(.*)$/);
+          return {
+            index,
+            timestamp: null,
+            speaker: speakerMatch ? speakerMatch[1].trim() : "Unknown",
+            text: speakerMatch ? speakerMatch[2].trim() : line.trim(),
+            confidence: null,
+          };
+        });
+
+        setTranscript(messages);
+        console.log("✅ [ACTIVE-CALL] Transcript updated with", messages.length, "messages");
+      }
+    });
+
+    return () => {
+      console.log("🧹 [ACTIVE-CALL] Cleaning up transcript subscription");
+      unsubscribe();
+      setIsConnectedToWebSocket(false);
+
+      if (currentCallIdRef.current === callId) {
+        currentCallIdRef.current = null;
+      }
+    };
+  }, [callId]);
+
   const value: ActiveCallContextType = {
     callId,
     transcript,
@@ -104,6 +153,7 @@ export function ActiveCallProvider({ children }: ActiveCallProviderProps) {
     patientInfo,
     fetchTranscript,
     clearCall,
+    isConnectedToWebSocket,
   };
 
   return <ActiveCallContext.Provider value={value}>{children}</ActiveCallContext.Provider>;

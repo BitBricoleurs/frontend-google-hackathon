@@ -74,6 +74,14 @@ const USE_MOCK_DATA = false;
  * 3. Implementing the actual API endpoints on the backend
  */
 export class QueueAPI {
+  // Shared WebSocket instance
+  private static ws: WebSocket | null = null;
+  private static transcriptCallbacks = new Map<string, (transcript: string) => void>();
+  private static wsReadyPromise: Promise<void> | null = null;
+  private static wsReadyResolve: (() => void) | null = null;
+  private static queueUpdateCallbacks = new Set<(calls: QueueCall[]) => void>();
+  private static queueData = new Map<string, QueueEntry>();
+
   /**
    * Fetch all calls currently in the waiting queue
    *
@@ -293,8 +301,6 @@ export class QueueAPI {
     }
 
     // Real WebSocket implementation
-    console.log("🔌 Connecting to queue WebSocket...");
-
     const wsUrl = process.env.NEXT_PUBLIC_API_URL?.replace("http", "ws") || "ws://localhost:8080";
     const token = tokenManager.getAccessToken();
 
@@ -305,11 +311,63 @@ export class QueueAPI {
       return this.fallbackToPolling(onUpdate);
     }
 
+    // Add this callback to the set of subscribers
+    this.queueUpdateCallbacks.add(onUpdate);
+    console.log(
+      "🔌 [QUEUE] Added queue update callback. Total subscribers:",
+      this.queueUpdateCallbacks.size
+    );
+
+    // Check if WebSocket is already connected or connecting
+    if (
+      this.ws &&
+      (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)
+    ) {
+      console.log("🔌 [QUEUE] Reusing existing WebSocket connection");
+
+      // If already open, send the current queue data immediately
+      if (this.ws.readyState === WebSocket.OPEN && this.queueData.size > 0) {
+        const calls = Array.from(this.queueData.values()).map(queueEntryToQueueCall);
+        onUpdate(calls);
+      }
+
+      // Return cleanup function
+      return () => {
+        this.queueUpdateCallbacks.delete(onUpdate);
+        console.log(
+          "🔌 [QUEUE] Removed queue update callback. Remaining subscribers:",
+          this.queueUpdateCallbacks.size
+        );
+
+        // Close WebSocket only if no more subscribers
+        if (this.queueUpdateCallbacks.size === 0 && this.ws) {
+          console.log("🔌 [QUEUE] No more subscribers, closing WebSocket");
+          this.ws.close();
+        }
+      };
+    }
+
+    console.log("🔌 [QUEUE] Creating new WebSocket connection...");
+
+    // Create a promise that resolves when WebSocket is ready
+    // Do this BEFORE creating the WebSocket to ensure it's always available
+    if (!this.wsReadyPromise) {
+      this.wsReadyPromise = new Promise((resolve) => {
+        this.wsReadyResolve = resolve;
+      });
+    }
+
     const ws = new WebSocket(`${wsUrl}/ws/queue-dashboard?token=${token}`);
-    const queueData = new Map<string, QueueEntry>();
+    this.ws = ws; // Store the shared WebSocket instance
 
     ws.onopen = () => {
       console.log("✅ WebSocket connected to queue dashboard");
+      // Resolve the ready promise if this is still the current WebSocket
+      if (this.ws === ws && this.wsReadyResolve) {
+        console.log("✅ Resolving WebSocket ready promise");
+        this.wsReadyResolve();
+        this.wsReadyResolve = null;
+      }
     };
 
     ws.onmessage = (event) => {
@@ -318,57 +376,74 @@ export class QueueAPI {
 
         switch (message.type) {
           case "queue:initial":
-            // Initial load of all queue entries
-            queueData.clear();
+            console.log("📋 [QUEUE] Initial queue data received");
+            this.queueData.clear();
             if (Array.isArray(message.data)) {
               message.data.forEach((entry: QueueEntry) => {
-                queueData.set(entry.id, entry);
+                this.queueData.set(entry.id, entry);
               });
-              const calls = Array.from(queueData.values()).map(queueEntryToQueueCall);
-              onUpdate(calls);
+              const calls = Array.from(this.queueData.values()).map(queueEntryToQueueCall);
+              // Notify ALL subscribers
+              this.queueUpdateCallbacks.forEach((callback) => callback(calls));
+              console.log("📋 [QUEUE] Loaded", calls.length, "calls");
             }
             break;
 
           case "queue:added":
-            // New entry added to queue
             if (message.data) {
-              queueData.set(message.data.id, message.data);
-              const calls = Array.from(queueData.values()).map(queueEntryToQueueCall);
-              onUpdate(calls);
+              this.queueData.set(message.data.id, message.data);
+              const calls = Array.from(this.queueData.values()).map(queueEntryToQueueCall);
+              // Notify ALL subscribers
+              this.queueUpdateCallbacks.forEach((callback) => callback(calls));
+              console.log("➕ [QUEUE] Call added - Queue now has", calls.length, "calls");
             }
             break;
 
           case "queue:updated":
-            // Existing entry updated
-            if (message.data && queueData.has(message.data.id)) {
-              queueData.set(message.data.id, message.data);
-              const calls = Array.from(queueData.values()).map(queueEntryToQueueCall);
-              onUpdate(calls);
+            if (message.data && this.queueData.has(message.data.id)) {
+              this.queueData.set(message.data.id, message.data);
+              const calls = Array.from(this.queueData.values()).map(queueEntryToQueueCall);
+              // Notify ALL subscribers
+              this.queueUpdateCallbacks.forEach((callback) => callback(calls));
+              console.log("🔄 [QUEUE] Call updated:", message.data.id);
             }
             break;
 
           case "queue:removed":
-            // Entry removed from queue
             if (message.data?.id) {
-              queueData.delete(message.data.id);
-              const calls = Array.from(queueData.values()).map(queueEntryToQueueCall);
-              onUpdate(calls);
+              this.queueData.delete(message.data.id);
+              const calls = Array.from(this.queueData.values()).map(queueEntryToQueueCall);
+              // Notify ALL subscribers
+              this.queueUpdateCallbacks.forEach((callback) => callback(calls));
+              console.log("➖ [QUEUE] Call removed:", message.data.id);
+            }
+            break;
+
+          case "queue:transcript-updated":
+            if (message.data?.callId && message.data?.transcript) {
+              const callback = this.transcriptCallbacks.get(message.data.callId);
+              if (callback) {
+                console.log("📝 [TRANSCRIPT] Update received for call:", message.data.callId);
+                callback(message.data.transcript);
+              } else {
+                console.warn("⚠️ [TRANSCRIPT] No callback for callId:", message.data.callId);
+              }
             }
             break;
 
           case "queue:pong":
-            // Heartbeat response
+            // Heartbeat response - silent
             break;
 
           case "queue:error":
-            console.error("❌ Queue WebSocket error:", message.error);
+            console.error("❌ [WEBSOCKET] Error:", message.error);
             break;
 
           default:
-            console.warn("⚠️ Unknown WebSocket message type:", message.type);
+            console.warn("⚠️ [WEBSOCKET] Unknown message type:", message.type);
         }
       } catch (error) {
-        console.error("❌ Error parsing WebSocket message:", error);
+        console.error("❌ [WEBSOCKET] Error parsing message:", error, "- Raw:", event.data);
       }
     };
 
@@ -378,12 +453,121 @@ export class QueueAPI {
 
     ws.onclose = () => {
       console.log("🔌 WebSocket disconnected from queue dashboard");
+      // Only clear if this is the current WebSocket instance
+      if (this.ws === ws) {
+        this.ws = null;
+        this.wsReadyPromise = null;
+        this.wsReadyResolve = null;
+      }
     };
 
     // Return cleanup function
     return () => {
-      if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
-        ws.close();
+      this.queueUpdateCallbacks.delete(onUpdate);
+      console.log(
+        "🔌 [QUEUE] Removed queue update callback. Remaining subscribers:",
+        this.queueUpdateCallbacks.size
+      );
+
+      // Close WebSocket only if no more subscribers
+      if (this.queueUpdateCallbacks.size === 0) {
+        console.log("🔌 [QUEUE] No more subscribers, closing WebSocket");
+        if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+          ws.close();
+        }
+        // Only clear if this is the current WebSocket instance
+        if (this.ws === ws) {
+          this.ws = null;
+          this.wsReadyPromise = null;
+          this.wsReadyResolve = null;
+          this.queueData.clear();
+        }
+      }
+    };
+  }
+
+  /**
+   * Subscribe to transcript updates for a specific call
+   *
+   * @param callId - The call ID to subscribe to
+   * @param onTranscriptUpdate - Callback function called when transcript is updated
+   * @returns Function to unsubscribe
+   */
+  static subscribeToTranscript(
+    callId: string,
+    onTranscriptUpdate: (transcript: string) => void
+  ): () => void {
+    console.log(`📝 [TRANSCRIPT] Subscribing to transcript for call: ${callId}`);
+
+    // Store the callback
+    this.transcriptCallbacks.set(callId, onTranscriptUpdate);
+    console.log(`✅ [TRANSCRIPT] Callback stored for callId: ${callId}`);
+
+    // Function to send subscription message
+    const sendSubscription = () => {
+      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+        const subscribeMessage = {
+          type: "queue:subscribe-transcript",
+          callId: callId,
+        };
+        console.log(
+          "📤 [TRANSCRIPT] Sending subscribe message:",
+          JSON.stringify(subscribeMessage, null, 2)
+        );
+        this.ws.send(JSON.stringify(subscribeMessage));
+        console.log("✅ [TRANSCRIPT] Subscribe message sent successfully");
+        return true;
+      }
+      return false;
+    };
+
+    // Try to send subscription immediately if WebSocket is already connected
+    if (sendSubscription()) {
+      console.log("✅ [TRANSCRIPT] Subscription sent immediately (WebSocket already open)");
+    } else {
+      // Wait for WebSocket to be ready using the promise
+      console.log("⏳ [TRANSCRIPT] Waiting for WebSocket to connect...");
+
+      // Ensure the promise exists - if not, create it (this handles race conditions)
+      if (!this.wsReadyPromise) {
+        console.warn("⚠️ [TRANSCRIPT] WebSocket not initialized yet. Creating ready promise...");
+        this.wsReadyPromise = new Promise((resolve) => {
+          this.wsReadyResolve = resolve;
+        });
+      }
+
+      this.wsReadyPromise
+        .then(() => {
+          console.log("✅ [TRANSCRIPT] WebSocket is now ready, sending subscription");
+          if (!sendSubscription()) {
+            console.error("❌ [TRANSCRIPT] Failed to send subscription even after WebSocket ready");
+          }
+        })
+        .catch((err) => {
+          console.error("❌ [TRANSCRIPT] Error waiting for WebSocket:", err);
+        });
+    }
+
+    // Return unsubscribe function
+    return () => {
+      console.log(`📝 [TRANSCRIPT] Unsubscribing from transcript for call: ${callId}`);
+
+      // Remove the callback
+      this.transcriptCallbacks.delete(callId);
+      console.log(`✅ [TRANSCRIPT] Callback removed for callId: ${callId}`);
+
+      // Send unsubscription message if WebSocket is connected
+      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+        const unsubscribeMessage = {
+          type: "queue:unsubscribe-transcript",
+          callId: callId,
+        };
+        console.log(
+          "📤 [TRANSCRIPT] Sending unsubscribe message:",
+          JSON.stringify(unsubscribeMessage, null, 2)
+        );
+        this.ws.send(JSON.stringify(unsubscribeMessage));
+        console.log("✅ [TRANSCRIPT] Unsubscribe message sent");
       }
     };
   }

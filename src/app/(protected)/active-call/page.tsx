@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   PhoneCallIcon,
   PhoneXIcon,
@@ -68,8 +68,17 @@ function formatDuration(seconds: number | null): string {
 export default function ActiveCallPage() {
   const [isMuted, setIsMuted] = useState(false);
   const [isSpeakerOn, setIsSpeakerOn] = useState(true);
-  const { callId, transcript, isLoading, error, callStatus, callDuration, startedAt } =
+  const { callId, transcript, isLoading, error, callStatus, callDuration, isConnectedToWebSocket } =
     useActiveCall();
+
+  const transcriptEndRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    if (transcriptEndRef.current && transcript.length > 0) {
+      transcriptEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [transcript]);
 
   // Show loading state
   if (isLoading) {
@@ -164,6 +173,12 @@ export default function ActiveCallPage() {
                     <div className="flex items-center gap-2">
                       <RecordIcon className="h-5 w-5 text-red-500 animate-pulse" weight="fill" />
                       <span className="text-sm font-medium text-foreground">Live Transcript</span>
+                      {isConnectedToWebSocket && (
+                        <span className="flex items-center gap-1 text-xs text-green-500">
+                          <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                          Live
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center gap-2">
                       <TranslateIcon className="h-4 w-4 text-muted-foreground" weight="duotone" />
@@ -177,9 +192,12 @@ export default function ActiveCallPage() {
                 {/* Transcript Messages */}
                 <div className="flex-1 overflow-auto p-6 space-y-4">
                   {transcript.length > 0 ? (
-                    transcript.map((message) => (
-                      <TranscriptMessage key={message.index} message={message} />
-                    ))
+                    <>
+                      {transcript.map((message) => (
+                        <TranscriptMessage key={message.index} message={message} />
+                      ))}
+                      <div ref={transcriptEndRef} />
+                    </>
                   ) : (
                     <div className="flex items-center justify-center h-full text-muted-foreground">
                       <p>No transcript available</p>
