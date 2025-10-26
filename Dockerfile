@@ -43,7 +43,7 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV PORT=3000
+# Note: PORT env var is set by Cloud Run automatically (defaults to 8080)
 
 # Security: non-root user
 RUN addgroup --system --gid 1001 nodejs && \
@@ -56,11 +56,12 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 USER nextjs
 
-EXPOSE 3000
+# Expose port 8080 (Cloud Run default)
+EXPOSE 8080
 
-# Health check
+# Health check using environment variable PORT (defaults to 8080)
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+  CMD node -e "require('http').get('http://localhost:' + (process.env.PORT || 8080) + '/', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
 # Use dumb-init for proper signal handling
 CMD ["dumb-init", "node", "server.js"]
