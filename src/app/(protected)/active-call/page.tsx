@@ -80,6 +80,7 @@ export default function ActiveCallPage() {
     setIsSpeakerOn,
     isInCall,
     takeCall,
+    isAudioConnected,
   } = useActiveCall();
 
   const transcriptEndRef = useRef<HTMLDivElement>(null);
@@ -160,6 +161,25 @@ export default function ActiveCallPage() {
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Audio Status Indicator */}
+            {isInCall && (
+              <div
+                className={cn(
+                  "flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium border",
+                  isAudioConnected
+                    ? "bg-green-500/10 text-green-600 border-green-500/20"
+                    : "bg-yellow-500/10 text-yellow-600 border-yellow-500/20"
+                )}
+              >
+                <span
+                  className={cn(
+                    "h-2 w-2 rounded-full",
+                    isAudioConnected ? "bg-green-500 animate-pulse" : "bg-yellow-500"
+                  )}
+                />
+                <span>{isAudioConnected ? "Audio Connected" : "Connecting Audio..."}</span>
+              </div>
+            )}
             <div className="flex items-center gap-2 text-sm font-medium text-foreground">
               <ClockIcon className="h-4 w-4" weight="bold" />
               <span>{displayDuration}</span>

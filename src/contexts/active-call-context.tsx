@@ -7,6 +7,7 @@ import * as handoffApi from "@/api/handoff";
 import { toast } from "sonner";
 import { QueueAPI } from "@/services/queue-api";
 import { useAuth } from "./auth-context";
+import { AudioManager } from "@/services/audio-manager";
 
 interface TranscriptMessage {
   index: number;
@@ -34,7 +35,8 @@ interface ActiveCallContextType {
   isSpeakerOn: boolean;
   setIsSpeakerOn: (speakerOn: boolean) => void;
   isInCall: boolean;
-  takeCall: () => void;
+  takeCall: () => Promise<void>;
+  isAudioConnected: boolean;
 }
 
 const ActiveCallContext = createContext<ActiveCallContextType | undefined>(undefined);
@@ -61,8 +63,10 @@ export function ActiveCallProvider({ children }: ActiveCallProviderProps) {
   const [isMuted, setIsMuted] = useState(false);
   const [isSpeakerOn, setIsSpeakerOn] = useState(true);
   const [isInCall, setIsInCall] = useState(false); // false = see mode, true = in call mode
+  const [isAudioConnected, setIsAudioConnected] = useState(false);
 
   const currentCallIdRef = useRef<string | null>(null);
+  const audioManagerRef = useRef<AudioManager | null>(null);
 
   // Fetch transcript when callId changes from URL params
   useEffect(() => {
@@ -71,6 +75,7 @@ export function ActiveCallProvider({ children }: ActiveCallProviderProps) {
       setCallId(callIdFromUrl);
       fetchTranscript(callIdFromUrl);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
   const fetchTranscript = async (targetCallId: string) => {
@@ -100,7 +105,28 @@ export function ActiveCallProvider({ children }: ActiveCallProviderProps) {
     }
   };
 
+  // Wrapper functions for mute/speaker that also control the audio manager
+  const handleSetMuted = (muted: boolean) => {
+    setIsMuted(muted);
+    if (audioManagerRef.current) {
+      audioManagerRef.current.setMuted(muted);
+    }
+  };
+
+  const handleSetSpeakerOn = (speakerOn: boolean) => {
+    setIsSpeakerOn(speakerOn);
+    if (audioManagerRef.current) {
+      audioManagerRef.current.setSpeakerOn(speakerOn);
+    }
+  };
+
   const clearCall = () => {
+    // Disconnect audio if connected
+    if (audioManagerRef.current) {
+      audioManagerRef.current.disconnect();
+      audioManagerRef.current = null;
+    }
+
     setCallId(null);
     setTranscript([]);
     setError(null);
@@ -112,6 +138,7 @@ export function ActiveCallProvider({ children }: ActiveCallProviderProps) {
     setIsInCall(false);
     setIsMuted(false);
     setIsSpeakerOn(true);
+    setIsAudioConnected(false);
   };
 
   const takeCall = async () => {
@@ -135,13 +162,46 @@ export function ActiveCallProvider({ children }: ActiveCallProviderProps) {
 
       if (response.success) {
         setIsInCall(true);
-        toast.success("You are now in control of the call");
-        console.log("✅ Call control taken:", response);
+
+        // Connect audio stream using the handoffId
+        try {
+          const audioManager = new AudioManager();
+          audioManagerRef.current = audioManager;
+
+          // Request microphone permission first (before WebSocket connection)
+          const hasPermission = await audioManager.requestMicrophonePermission();
+
+          if (!hasPermission) {
+            toast.error("Microphone permission denied. You won't be able to speak to the caller.");
+            // Continue anyway - they can still listen
+          }
+
+          await audioManager.connect(
+            response.handoffId, // Use handoffId instead of callId
+            () => {
+              // Handle audio messages - no logging needed
+            },
+            () => {
+              // On connected
+              setIsAudioConnected(true);
+              toast.success("Audio connected - You can now speak with the caller");
+            },
+            () => {
+              // On disconnected
+              setIsAudioConnected(false);
+            },
+            (error) => {
+              // On error
+              toast.error(`Audio error: ${error}`);
+            }
+          );
+        } catch {
+          toast.error("Failed to connect audio stream");
+        }
       } else {
         toast.error("Failed to take control of the call");
       }
     } catch (err) {
-      console.error("Error taking control of call:", err);
       const errorMessage =
         err instanceof Error ? err.message : "Failed to take control of the call";
       toast.error(errorMessage);
@@ -208,11 +268,12 @@ export function ActiveCallProvider({ children }: ActiveCallProviderProps) {
     clearCall,
     isConnectedToWebSocket,
     isMuted,
-    setIsMuted,
+    setIsMuted: handleSetMuted,
     isSpeakerOn,
-    setIsSpeakerOn,
+    setIsSpeakerOn: handleSetSpeakerOn,
     isInCall,
     takeCall,
+    isAudioConnected,
   };
 
   return <ActiveCallContext.Provider value={value}>{children}</ActiveCallContext.Provider>;
