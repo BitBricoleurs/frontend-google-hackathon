@@ -3,8 +3,10 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import * as transcriptApi from "@/api/transcript";
+import * as handoffApi from "@/api/handoff";
 import { toast } from "sonner";
 import { QueueAPI } from "@/services/queue-api";
+import { useAuth } from "./auth-context";
 
 interface TranscriptMessage {
   index: number;
@@ -27,6 +29,12 @@ interface ActiveCallContextType {
   fetchTranscript: (callId: string) => Promise<void>;
   clearCall: () => void;
   isConnectedToWebSocket: boolean;
+  isMuted: boolean;
+  setIsMuted: (muted: boolean) => void;
+  isSpeakerOn: boolean;
+  setIsSpeakerOn: (speakerOn: boolean) => void;
+  isInCall: boolean;
+  takeCall: () => void;
 }
 
 const ActiveCallContext = createContext<ActiveCallContextType | undefined>(undefined);
@@ -37,6 +45,7 @@ interface ActiveCallProviderProps {
 
 export function ActiveCallProvider({ children }: ActiveCallProviderProps) {
   const searchParams = useSearchParams();
+  const { user } = useAuth();
   const [callId, setCallId] = useState<string | null>(null);
   const [transcript, setTranscript] = useState<TranscriptMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -47,6 +56,11 @@ export function ActiveCallProvider({ children }: ActiveCallProviderProps) {
   const [endedAt, setEndedAt] = useState<string | null>(null);
   const [patientInfo, setPatientInfo] = useState<object | null>(null);
   const [isConnectedToWebSocket, setIsConnectedToWebSocket] = useState(false);
+
+  // Call control states
+  const [isMuted, setIsMuted] = useState(false);
+  const [isSpeakerOn, setIsSpeakerOn] = useState(true);
+  const [isInCall, setIsInCall] = useState(false); // false = see mode, true = in call mode
 
   const currentCallIdRef = useRef<string | null>(null);
 
@@ -95,6 +109,45 @@ export function ActiveCallProvider({ children }: ActiveCallProviderProps) {
     setStartedAt(null);
     setEndedAt(null);
     setPatientInfo(null);
+    setIsInCall(false);
+    setIsMuted(false);
+    setIsSpeakerOn(true);
+  };
+
+  const takeCall = async () => {
+    if (!callId) {
+      toast.error("No call ID available");
+      return;
+    }
+
+    if (!user?.operatorId) {
+      toast.error("Operator ID not found. Please log in again.");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const response = await handoffApi.takeControl(
+        callId,
+        user.operatorId,
+        "Operator taking control from see mode"
+      );
+
+      if (response.success) {
+        setIsInCall(true);
+        toast.success("You are now in control of the call");
+        console.log("✅ Call control taken:", response);
+      } else {
+        toast.error("Failed to take control of the call");
+      }
+    } catch (err) {
+      console.error("Error taking control of call:", err);
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to take control of the call";
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // WebSocket subscription for real-time transcript updates
@@ -154,6 +207,12 @@ export function ActiveCallProvider({ children }: ActiveCallProviderProps) {
     fetchTranscript,
     clearCall,
     isConnectedToWebSocket,
+    isMuted,
+    setIsMuted,
+    isSpeakerOn,
+    setIsSpeakerOn,
+    isInCall,
+    takeCall,
   };
 
   return <ActiveCallContext.Provider value={value}>{children}</ActiveCallContext.Provider>;

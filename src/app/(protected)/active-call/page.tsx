@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import {
   PhoneCallIcon,
   PhoneXIcon,
@@ -66,10 +66,21 @@ function formatDuration(seconds: number | null): string {
 }
 
 export default function ActiveCallPage() {
-  const [isMuted, setIsMuted] = useState(false);
-  const [isSpeakerOn, setIsSpeakerOn] = useState(true);
-  const { callId, transcript, isLoading, error, callStatus, callDuration, isConnectedToWebSocket } =
-    useActiveCall();
+  const {
+    callId,
+    transcript,
+    isLoading,
+    error,
+    callStatus,
+    callDuration,
+    isConnectedToWebSocket,
+    isMuted,
+    setIsMuted,
+    isSpeakerOn,
+    setIsSpeakerOn,
+    isInCall,
+    takeCall,
+  } = useActiveCall();
 
   const transcriptEndRef = useRef<HTMLDivElement>(null);
 
@@ -258,41 +269,67 @@ export default function ActiveCallPage() {
         {/* Call Controls - Full Width Bottom Bar */}
         <div className="border-t border-border bg-card px-6 py-4">
           <div className="flex items-center justify-center gap-4">
-            <button
-              onClick={() => setIsMuted(!isMuted)}
-              className={cn(
-                "flex h-12 w-12 items-center justify-center rounded-full transition-colors",
-                isMuted
-                  ? "bg-red-500 text-white hover:bg-red-600"
-                  : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-              )}
-            >
-              {isMuted ? (
-                <MicrophoneSlashIcon className="h-6 w-6" weight="fill" />
-              ) : (
-                <MicrophoneIcon className="h-6 w-6" weight="fill" />
-              )}
-            </button>
+            {isInCall ? (
+              <>
+                <button
+                  onClick={() => setIsMuted(!isMuted)}
+                  className={cn(
+                    "flex h-12 w-12 items-center justify-center rounded-full transition-colors",
+                    isMuted
+                      ? "bg-red-500 text-white hover:bg-red-600"
+                      : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                  )}
+                >
+                  {isMuted ? (
+                    <MicrophoneSlashIcon className="h-6 w-6" weight="fill" />
+                  ) : (
+                    <MicrophoneIcon className="h-6 w-6" weight="fill" />
+                  )}
+                </button>
 
-            <button className="flex h-16 w-16 items-center justify-center rounded-full bg-red-500 text-white hover:bg-red-600 transition-colors shadow-lg">
-              <PhoneXIcon className="h-8 w-8" weight="fill" />
-            </button>
+                <button className="flex h-16 w-16 items-center justify-center rounded-full bg-red-500 text-white hover:bg-red-600 transition-colors shadow-lg">
+                  <PhoneXIcon className="h-8 w-8" weight="fill" />
+                </button>
 
-            <button
-              onClick={() => setIsSpeakerOn(!isSpeakerOn)}
-              className={cn(
-                "flex h-12 w-12 items-center justify-center rounded-full transition-colors",
-                isSpeakerOn
-                  ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                  : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-              )}
-            >
-              {isSpeakerOn ? (
-                <SpeakerHighIcon className="h-6 w-6" weight="fill" />
-              ) : (
-                <SpeakerSimpleSlashIcon className="h-6 w-6" weight="fill" />
-              )}
-            </button>
+                <button
+                  onClick={() => setIsSpeakerOn(!isSpeakerOn)}
+                  className={cn(
+                    "flex h-12 w-12 items-center justify-center rounded-full transition-colors",
+                    isSpeakerOn
+                      ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                      : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                  )}
+                >
+                  {isSpeakerOn ? (
+                    <SpeakerHighIcon className="h-6 w-6" weight="fill" />
+                  ) : (
+                    <SpeakerSimpleSlashIcon className="h-6 w-6" weight="fill" />
+                  )}
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={takeCall}
+                disabled={isLoading}
+                className={cn(
+                  "group relative flex items-center justify-center gap-3 h-12 px-4 m-2 rounded-xl bg-gradient-to-r from-green-500 to-green-600 text-white transition-all duration-150 font-bold text-md cursor-pointer",
+                  isLoading ? "opacity-75" : "hover:from-green-600 hover:to-green-700"
+                )}
+              >
+                <div className="absolute inset-0 rounded-xl bg-white opacity-0  transition-opacityduration-150" />
+                {isLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-7 w-7 border-b-2 border-white" />
+                    <span className="relative">Taking Control...</span>
+                  </>
+                ) : (
+                  <>
+                    <PhoneCallIcon className="h-7 w-7" weight="fill" />
+                    <span className="relative">Take Call</span>
+                  </>
+                )}
+              </button>
+            )}
           </div>
         </div>
       </div>
