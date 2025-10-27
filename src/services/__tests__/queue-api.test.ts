@@ -220,6 +220,57 @@ describe("QueueAPI", () => {
     });
   });
 
+  describe("edge cases and error handling", () => {
+    it("should handle empty queue list", async () => {
+      mockQueueApi.listQueueEntries.mockResolvedValue([]);
+
+      const result = await QueueAPI.getQueueCalls();
+
+      expect(result).toEqual([]);
+    });
+
+    it("should transform multiple queue entries correctly", async () => {
+      const multipleEntries: QueueEntry[] = [
+        mockQueueEntry,
+        {
+          ...mockQueueEntry,
+          id: "queue-456",
+          callId: "call-789",
+          priority: "P2",
+        },
+      ];
+
+      mockQueueApi.listQueueEntries.mockResolvedValue(multipleEntries);
+
+      const result = await QueueAPI.getQueueCalls();
+
+      expect(result).toHaveLength(2);
+      expect(result[0].id).toBe("queue-123");
+      expect(result[1].id).toBe("queue-456");
+    });
+
+    it("should handle network errors gracefully", async () => {
+      mockQueueApi.listQueueEntries.mockRejectedValue(new Error("Network error"));
+
+      await expect(QueueAPI.getQueueCalls()).rejects.toThrow("Network error");
+    });
+
+    it("should handle malformed queue entry data", async () => {
+      const malformedEntry = {
+        ...mockQueueEntry,
+        waitingSince: "invalid-date",
+      };
+
+      mockQueueApi.listQueueEntries.mockResolvedValue([malformedEntry]);
+
+      const result = await QueueAPI.getQueueCalls();
+
+      expect(result).toHaveLength(1);
+      // Should still transform even with invalid date
+      expect(result[0].id).toBe("queue-123");
+    });
+  });
+
   describe.skip("subscribeToQueueUpdates", () => {
     let mockWs: MockWebSocket;
 

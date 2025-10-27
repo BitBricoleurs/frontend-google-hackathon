@@ -343,4 +343,86 @@ describe("ActiveCallContext", () => {
 
     expect(screen.getByTestId("speaker")).toHaveTextContent("Speaker On");
   });
+
+  it("should handle WebSocket connection", async () => {
+    mockSearchParams.set("callId", "call-123");
+
+    render(
+      <ActiveCallProvider>
+        <TestComponent />
+      </ActiveCallProvider>
+    );
+
+    await waitFor(() => {
+      expect(mockQueueAPI.subscribeToTranscript).toHaveBeenCalled();
+    });
+  });
+
+  it("should update call duration", async () => {
+    mockSearchParams.set("callId", "call-123");
+
+    mockTranscriptApi.getFormattedTranscript.mockResolvedValue({
+      callId: "call-123",
+      status: "active",
+      startedAt: new Date(Date.now() - 60000).toISOString(), // 1 minute ago
+      endedAt: null,
+      duration: 60,
+      messages: [],
+      patient: { name: "Test Patient" },
+    });
+
+    function DurationComponent() {
+      const { callDuration } = useActiveCall();
+      return <div data-testid="duration">{callDuration || 0}</div>;
+    }
+
+    render(
+      <ActiveCallProvider>
+        <DurationComponent />
+      </ActiveCallProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("duration")).toHaveTextContent("60");
+    });
+  });
+
+  it("should handle error state", async () => {
+    mockSearchParams.set("callId", "call-123");
+    mockTranscriptApi.getFormattedTranscript.mockRejectedValue(new Error("Failed to load"));
+
+    render(
+      <ActiveCallProvider>
+        <TestComponent />
+      </ActiveCallProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("error")).toHaveTextContent("Failed to load");
+    });
+  });
+
+  it("should handle empty transcript", async () => {
+    mockSearchParams.set("callId", "call-123");
+
+    mockTranscriptApi.getFormattedTranscript.mockResolvedValue({
+      callId: "call-123",
+      status: "active",
+      startedAt: "2025-01-01T10:00:00Z",
+      endedAt: null,
+      duration: 100,
+      messages: [],
+      patient: { name: "Test Patient" },
+    });
+
+    render(
+      <ActiveCallProvider>
+        <TestComponent />
+      </ActiveCallProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("transcript-count")).toHaveTextContent("0");
+    });
+  });
 });

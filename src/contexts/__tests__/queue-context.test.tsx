@@ -72,4 +72,84 @@ describe("QueueContext", () => {
     expect(mockQueueAPI.getQueueStats).toHaveBeenCalled();
     expect(mockQueueAPI.subscribeToQueueUpdates).toHaveBeenCalled();
   });
+
+  it("should handle empty calls list", async () => {
+    mockQueueAPI.getQueueCalls.mockResolvedValue([]);
+    mockQueueAPI.getQueueStats.mockResolvedValue({
+      totalCalls: 0,
+      averageWaitTime: 0,
+      aiConnected: 0,
+      aiConnecting: 0,
+      pending: 0,
+      highPriority: 0,
+    });
+
+    render(
+      <QueueProvider>
+        <TestComponent />
+      </QueueProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("calls-count")).toHaveTextContent("0");
+    });
+  });
+
+  it("should handle multiple calls", async () => {
+    const multipleCalls: QueueCall[] = [
+      mockCall,
+      { ...mockCall, id: "call-2", callId: "call-id-2" },
+      { ...mockCall, id: "call-3", callId: "call-id-3" },
+    ];
+
+    mockQueueAPI.getQueueCalls.mockResolvedValue(multipleCalls);
+
+    render(
+      <QueueProvider>
+        <TestComponent />
+      </QueueProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("calls-count")).toHaveTextContent("3");
+    });
+  });
+
+  it("should handle API errors", async () => {
+    mockQueueAPI.getQueueCalls.mockRejectedValue(new Error("API Error"));
+
+    render(
+      <QueueProvider>
+        <TestComponent />
+      </QueueProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("error")).toHaveTextContent("API Error");
+    });
+  });
+
+  it("should update stats correctly", async () => {
+    const stats = {
+      totalCalls: 5,
+      averageWaitTime: 150,
+      aiConnected: 3,
+      aiConnecting: 1,
+      pending: 1,
+      highPriority: 2,
+    };
+
+    mockQueueAPI.getQueueStats.mockResolvedValue(stats);
+
+    render(
+      <QueueProvider>
+        <TestComponent />
+      </QueueProvider>
+    );
+
+    await waitFor(() => {
+      const statsData = screen.getByTestId("stats").textContent;
+      expect(statsData).toContain("5");
+    });
+  });
 });

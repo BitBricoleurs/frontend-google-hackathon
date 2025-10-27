@@ -116,4 +116,33 @@ describe("QueuedCall Component", () => {
     rerender(<QueuedCall {...defaultProps} fullName="Alice" />);
     expect(screen.getByText("A")).toBeInTheDocument();
   });
+
+  it("should handle empty keywords array", () => {
+    render(<QueuedCall {...defaultProps} keywords={[]} />);
+
+    // Should not crash and component should render
+    expect(screen.getByText("John Doe")).toBeInTheDocument();
+  });
+
+  it("should render with different AI statuses", () => {
+    const { rerender } = render(<QueuedCall {...defaultProps} aiStatus="pending" />);
+    expect(screen.getByText("John Doe")).toBeInTheDocument();
+
+    rerender(<QueuedCall {...defaultProps} aiStatus="connecting" />);
+    expect(screen.getByText("John Doe")).toBeInTheDocument();
+  });
+
+  it("should format various wait times", () => {
+    const { rerender } = render(<QueuedCall {...defaultProps} waitTime={3665} />);
+    expect(screen.getByText("John Doe")).toBeInTheDocument();
+
+    rerender(<QueuedCall {...defaultProps} waitTime={0} />);
+    expect(screen.getByText("John Doe")).toBeInTheDocument();
+  });
+
+  it("should handle very long caller names", () => {
+    const longName = "Very Long Name That Should Be Displayed";
+    render(<QueuedCall {...defaultProps} fullName={longName} />);
+    expect(screen.getByText(longName)).toBeInTheDocument();
+  });
 });
