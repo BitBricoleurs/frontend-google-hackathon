@@ -600,6 +600,22 @@ export class QueueAPI {
       console.log("📊 Stopped polling mode");
     };
   }
+
+  /**
+   * Reset WebSocket state - FOR TESTING ONLY
+   * @internal
+   */
+  static __resetForTesting() {
+    if (this.ws) {
+      this.ws.close();
+    }
+    this.ws = null;
+    this.transcriptCallbacks.clear();
+    this.wsReadyPromise = null;
+    this.wsReadyResolve = null;
+    this.queueUpdateCallbacks.clear();
+    this.queueData.clear();
+  }
 }
 
 // Type definitions for API responses

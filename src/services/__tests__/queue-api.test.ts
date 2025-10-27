@@ -271,10 +271,13 @@ describe("QueueAPI", () => {
     });
   });
 
-  describe.skip("subscribeToQueueUpdates", () => {
+  describe("subscribeToQueueUpdates", () => {
     let mockWs: MockWebSocket;
 
     beforeEach(() => {
+      // Reset QueueAPI state
+      QueueAPI.__resetForTesting();
+
       mockWs = new MockWebSocket();
       const MockWebSocketConstructor = jest.fn(() => mockWs) as unknown as typeof WebSocket;
 
@@ -290,6 +293,11 @@ describe("QueueAPI", () => {
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (global as any).WebSocket = MockWebSocketConstructor;
+    });
+
+    afterEach(() => {
+      // Reset QueueAPI state
+      QueueAPI.__resetForTesting();
     });
 
     it("should create WebSocket connection with token", () => {
@@ -420,17 +428,37 @@ describe("QueueAPI", () => {
     });
   });
 
-  describe.skip("subscribeToTranscript", () => {
+  describe("subscribeToTranscript", () => {
     let mockWs: MockWebSocket;
 
     beforeEach(() => {
+      // Reset QueueAPI state
+      QueueAPI.__resetForTesting();
+
       mockWs = new MockWebSocket();
+      const MockWebSocketConstructor = jest.fn(() => mockWs) as unknown as typeof WebSocket;
+
+      // Add static constants
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (global as any).WebSocket = jest.fn(() => mockWs) as unknown as typeof WebSocket;
+      (MockWebSocketConstructor as any).OPEN = MockWebSocket.OPEN;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (MockWebSocketConstructor as any).CONNECTING = MockWebSocket.CONNECTING;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (MockWebSocketConstructor as any).CLOSING = MockWebSocket.CLOSING;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (MockWebSocketConstructor as any).CLOSED = MockWebSocket.CLOSED;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (global as any).WebSocket = MockWebSocketConstructor;
 
       // First subscribe to queue updates to initialize WebSocket
       QueueAPI.subscribeToQueueUpdates(() => {});
       mockWs.simulateOpen();
+    });
+
+    afterEach(() => {
+      // Reset QueueAPI state
+      QueueAPI.__resetForTesting();
     });
 
     it("should send subscription message when WebSocket is ready", () => {
@@ -595,6 +623,282 @@ describe("QueueAPI", () => {
 
       // Should not crash
       expect(onUpdate).not.toHaveBeenCalled();
+    });
+
+    it("should handle WebSocket errors", () => {
+      const onUpdate = jest.fn();
+      const onError = jest.fn();
+
+      QueueAPI.__resetForTesting();
+
+      const mockWs2 = new MockWebSocket();
+      const MockWebSocketConstructor = jest.fn(() => mockWs2) as unknown as typeof WebSocket;
+
+      // Add static constants
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (MockWebSocketConstructor as any).OPEN = MockWebSocket.OPEN;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (MockWebSocketConstructor as any).CONNECTING = MockWebSocket.CONNECTING;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (MockWebSocketConstructor as any).CLOSING = MockWebSocket.CLOSING;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (MockWebSocketConstructor as any).CLOSED = MockWebSocket.CLOSED;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (global as any).WebSocket = MockWebSocketConstructor;
+
+      QueueAPI.subscribeToQueueUpdates(onUpdate);
+
+      // Trigger error
+      if (mockWs2.onerror) {
+        mockWs2.onerror(new Event("error"));
+      }
+
+      // Should handle error gracefully
+      expect(onUpdate).not.toHaveBeenCalled();
+    });
+
+    it("should handle WebSocket close", () => {
+      const onUpdate = jest.fn();
+
+      QueueAPI.__resetForTesting();
+
+      const mockWs3 = new MockWebSocket();
+      const MockWebSocketConstructor = jest.fn(() => mockWs3) as unknown as typeof WebSocket;
+
+      // Add static constants
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (MockWebSocketConstructor as any).OPEN = MockWebSocket.OPEN;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (MockWebSocketConstructor as any).CONNECTING = MockWebSocket.CONNECTING;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (MockWebSocketConstructor as any).CLOSING = MockWebSocket.CLOSING;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (MockWebSocketConstructor as any).CLOSED = MockWebSocket.CLOSED;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (global as any).WebSocket = MockWebSocketConstructor;
+
+      QueueAPI.subscribeToQueueUpdates(onUpdate);
+      mockWs3.simulateOpen();
+
+      // Trigger close
+      mockWs3.simulateClose();
+
+      // Should handle close gracefully
+      expect(mockWs3.readyState).toBe(MockWebSocket.CLOSED);
+    });
+
+    it("should reuse WebSocket connection when subscribing multiple times", () => {
+      QueueAPI.__resetForTesting();
+
+      const mockWs4 = new MockWebSocket();
+      let wsConstructorCallCount = 0;
+      const MockWebSocketConstructor = jest.fn(() => {
+        wsConstructorCallCount++;
+        return mockWs4;
+      }) as unknown as typeof WebSocket;
+
+      // Add static constants
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (MockWebSocketConstructor as any).OPEN = MockWebSocket.OPEN;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (MockWebSocketConstructor as any).CONNECTING = MockWebSocket.CONNECTING;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (MockWebSocketConstructor as any).CLOSING = MockWebSocket.CLOSING;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (MockWebSocketConstructor as any).CLOSED = MockWebSocket.CLOSED;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (global as any).WebSocket = MockWebSocketConstructor;
+
+      const onUpdate1 = jest.fn();
+      const onUpdate2 = jest.fn();
+
+      QueueAPI.subscribeToQueueUpdates(onUpdate1);
+      mockWs4.simulateOpen();
+
+      // Send initial data
+      mockWs4.simulateMessage({
+        type: "queue:initial",
+        data: [mockQueueEntry],
+      });
+
+      // Subscribe again - should reuse WebSocket
+      QueueAPI.subscribeToQueueUpdates(onUpdate2);
+
+      // WebSocket should only be created once
+      expect(wsConstructorCallCount).toBe(1);
+
+      // Both callbacks should receive updates
+      mockWs4.simulateMessage({
+        type: "queue:added",
+        data: { ...mockQueueEntry, id: "queue-456" },
+      });
+
+      expect(onUpdate1).toHaveBeenCalled();
+      expect(onUpdate2).toHaveBeenCalled();
+    });
+
+    it("should close WebSocket when last subscriber unsubscribes", () => {
+      QueueAPI.__resetForTesting();
+
+      const mockWs5 = new MockWebSocket();
+      const MockWebSocketConstructor = jest.fn(() => mockWs5) as unknown as typeof WebSocket;
+
+      // Add static constants
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (MockWebSocketConstructor as any).OPEN = MockWebSocket.OPEN;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (MockWebSocketConstructor as any).CONNECTING = MockWebSocket.CONNECTING;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (MockWebSocketConstructor as any).CLOSING = MockWebSocket.CLOSING;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (MockWebSocketConstructor as any).CLOSED = MockWebSocket.CLOSED;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (global as any).WebSocket = MockWebSocketConstructor;
+
+      const unsub1 = QueueAPI.subscribeToQueueUpdates(jest.fn());
+      const unsub2 = QueueAPI.subscribeToQueueUpdates(jest.fn());
+
+      mockWs5.simulateOpen();
+
+      // First unsubscribe shouldn't close WebSocket
+      unsub1();
+      expect(mockWs5.close).not.toHaveBeenCalled();
+
+      // Last unsubscribe should close WebSocket
+      unsub2();
+      expect(mockWs5.close).toHaveBeenCalled();
+    });
+
+    it("should handle message with existing queue data", () => {
+      QueueAPI.__resetForTesting();
+
+      const mockWs6 = new MockWebSocket();
+      const MockWebSocketConstructor = jest.fn(() => mockWs6) as unknown as typeof WebSocket;
+
+      // Add static constants
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (MockWebSocketConstructor as any).OPEN = MockWebSocket.OPEN;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (MockWebSocketConstructor as any).CONNECTING = MockWebSocket.CONNECTING;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (MockWebSocketConstructor as any).CLOSING = MockWebSocket.CLOSING;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (MockWebSocketConstructor as any).CLOSED = MockWebSocket.CLOSED;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (global as any).WebSocket = MockWebSocketConstructor;
+
+      const onUpdate1 = jest.fn();
+
+      // Subscribe first time
+      QueueAPI.subscribeToQueueUpdates(onUpdate1);
+      mockWs6.simulateOpen();
+
+      // Send initial data
+      mockWs6.simulateMessage({
+        type: "queue:initial",
+        data: [mockQueueEntry],
+      });
+
+      // Now subscribe a second time - should receive existing data immediately
+      const onUpdate2 = jest.fn();
+      QueueAPI.subscribeToQueueUpdates(onUpdate2);
+
+      // Second callback should be called with existing data
+      expect(onUpdate2).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: "queue-123",
+          }),
+        ])
+      );
+    });
+
+    it("should handle queue:updated for existing entries", () => {
+      QueueAPI.__resetForTesting();
+
+      const mockWs7 = new MockWebSocket();
+      const MockWebSocketConstructor = jest.fn(() => mockWs7) as unknown as typeof WebSocket;
+
+      // Add static constants
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (MockWebSocketConstructor as any).OPEN = MockWebSocket.OPEN;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (MockWebSocketConstructor as any).CONNECTING = MockWebSocket.CONNECTING;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (MockWebSocketConstructor as any).CLOSING = MockWebSocket.CLOSING;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (MockWebSocketConstructor as any).CLOSED = MockWebSocket.CLOSED;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (global as any).WebSocket = MockWebSocketConstructor;
+
+      const onUpdate = jest.fn();
+
+      QueueAPI.subscribeToQueueUpdates(onUpdate);
+      mockWs7.simulateOpen();
+
+      // Send initial data
+      mockWs7.simulateMessage({
+        type: "queue:initial",
+        data: [mockQueueEntry],
+      });
+
+      onUpdate.mockClear();
+
+      // Update existing entry
+      mockWs7.simulateMessage({
+        type: "queue:updated",
+        data: { ...mockQueueEntry, status: "CLAIMED" },
+      });
+
+      expect(onUpdate).toHaveBeenCalled();
+    });
+
+    it("should handle queue:removed for existing entries", () => {
+      QueueAPI.__resetForTesting();
+
+      const mockWs8 = new MockWebSocket();
+      const MockWebSocketConstructor = jest.fn(() => mockWs8) as unknown as typeof WebSocket;
+
+      // Add static constants
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (MockWebSocketConstructor as any).OPEN = MockWebSocket.OPEN;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (MockWebSocketConstructor as any).CONNECTING = MockWebSocket.CONNECTING;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (MockWebSocketConstructor as any).CLOSING = MockWebSocket.CLOSING;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (MockWebSocketConstructor as any).CLOSED = MockWebSocket.CLOSED;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (global as any).WebSocket = MockWebSocketConstructor;
+
+      const onUpdate = jest.fn();
+
+      QueueAPI.subscribeToQueueUpdates(onUpdate);
+      mockWs8.simulateOpen();
+
+      // Send initial data with entry
+      mockWs8.simulateMessage({
+        type: "queue:initial",
+        data: [mockQueueEntry],
+      });
+
+      onUpdate.mockClear();
+
+      // Remove the entry
+      mockWs8.simulateMessage({
+        type: "queue:removed",
+        data: { id: "queue-123" },
+      });
+
+      // Should be called with empty array
+      expect(onUpdate).toHaveBeenCalledWith([]);
     });
   });
 });
