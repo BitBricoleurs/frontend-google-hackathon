@@ -228,12 +228,13 @@ export function ActiveCallProvider({ children }: ActiveCallProviderProps) {
       if (typeof transcriptData === "string") {
         const lines = transcriptData.split("\n").filter((line) => line.trim());
         const messages: TranscriptMessage[] = lines.map((line, index) => {
-          const speakerMatch = line.match(/^(.*?):\s*(.*)$/);
+          const colonIndex = line.indexOf(":");
+          const hasSpeaker = colonIndex !== -1;
           return {
             index,
             timestamp: null,
-            speaker: speakerMatch ? speakerMatch[1].trim() : "Unknown",
-            text: speakerMatch ? speakerMatch[2].trim() : line.trim(),
+            speaker: hasSpeaker ? line.slice(0, colonIndex).trim() : "Unknown",
+            text: hasSpeaker ? line.slice(colonIndex + 1).trim() : line.trim(),
             confidence: null,
           };
         });
