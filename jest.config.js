@@ -38,6 +38,10 @@ const customJestConfig = {
     '!src/test/**',
   ],
 
+  // Coverage reporters for SonarCube
+  coverageReporters: ['text', 'lcov', 'html'],
+  coverageDirectory: 'coverage',
+
   // Coverage thresholds (optional - uncomment to enforce)
   // coverageThresholds: {
   //   global: {
