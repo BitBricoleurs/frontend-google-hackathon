@@ -41,3 +41,8 @@ yarn-error.log*
 next-env.d.ts
 
 .swc/*
+
+# Google Cloud credentials (GitHub Actions setup)
+*-key.json
+github-actions-key.json
+service-account-key.json

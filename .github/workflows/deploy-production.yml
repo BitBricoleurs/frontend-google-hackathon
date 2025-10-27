@@ -1,0 +1,197 @@
+name: Deploy to Production
+
+# Trigger this workflow when:
+# - Push to main/master branch (production)
+# - Manual trigger via GitHub UI (with version input)
+# - New release is published
+on:
+  push:
+    branches:
+      - main
+      - master
+  release:
+    types: [published]
+  workflow_dispatch: # Allows manual trigger
+    inputs:
+      version:
+        description: "Version to deploy (e.g., v1.0.0)"
+        required: true
+        type: string
+
+# Environment variables used across all jobs
+env:
+  PROJECT_ID: samu-ai-474822
+  REGION: europe-west1
+  SERVICE_NAME: samu-frontend-production
+  REGISTRY_URL: europe-west1-docker.pkg.dev/samu-ai-474822/frontend-images
+  BACKEND_API_URL: https://samu-ai-triage-production-262427917999.europe-west1.run.app
+
+jobs:
+  deploy-production:
+    name: Build and Deploy to Production
+    runs-on: ubuntu-latest
+
+    # Production deployments require approval
+    environment:
+      name: production
+      url: ${{ steps.service.outputs.url }}
+
+    # Permissions needed for GCP authentication
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      # Step 1: Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Authenticate to Google Cloud
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      # Step 3: Set up Cloud SDK
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      # Step 4: Configure Docker to use gcloud as credential helper
+      - name: Configure Docker for Artifact Registry
+        run: |
+          gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
+
+      # Step 5: Determine version number
+      - name: Determine version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            # Manual trigger with version input
+            VERSION="${{ github.event.inputs.version }}"
+          elif [ "${{ github.event_name }}" == "release" ]; then
+            # Release event
+            VERSION="${{ github.event.release.tag_name }}"
+          else
+            # Push to main/master - use timestamp-based version
+            TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+            SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+            VERSION="v0.0.0-${TIMESTAMP}-${SHORT_SHA}"
+          fi
+
+          # Validate version format (should start with 'v')
+          if [[ ! $VERSION =~ ^v ]]; then
+            VERSION="v${VERSION}"
+          fi
+
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Deploying version: ${VERSION}"
+
+      # Step 6: Generate additional tags
+      - name: Generate image tags
+        id: tags
+        run: |
+          TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+          SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+          echo "timestamp=${TIMESTAMP}" >> $GITHUB_OUTPUT
+          echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
+
+      # Step 7: Build Docker image
+      - name: Build Docker image
+        run: |
+          docker build \
+            --platform linux/amd64 \
+            --build-arg NEXT_PUBLIC_API_URL="${{ env.BACKEND_API_URL }}" \
+            -t ${{ env.REGISTRY_URL }}/frontend:${{ steps.version.outputs.version }} \
+            -t ${{ env.REGISTRY_URL }}/frontend:production-latest \
+            -t ${{ env.REGISTRY_URL }}/frontend:production-${{ steps.tags.outputs.timestamp }} \
+            .
+
+      # Step 8: Push images to Artifact Registry
+      - name: Push images to Artifact Registry
+        run: |
+          docker push ${{ env.REGISTRY_URL }}/frontend:${{ steps.version.outputs.version }}
+          docker push ${{ env.REGISTRY_URL }}/frontend:production-latest
+          docker push ${{ env.REGISTRY_URL }}/frontend:production-${{ steps.tags.outputs.timestamp }}
+
+      # Step 9: Deploy to Cloud Run
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy ${{ env.SERVICE_NAME }} \
+            --image=${{ env.REGISTRY_URL }}/frontend:${{ steps.version.outputs.version }} \
+            --region=${{ env.REGION }} \
+            --platform=managed \
+            --allow-unauthenticated \
+            --quiet
+
+      # Step 10: Get service URL
+      - name: Get service URL
+        id: service
+        run: |
+          SERVICE_URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
+            --region=${{ env.REGION }} \
+            --format='value(status.url)')
+          echo "url=${SERVICE_URL}" >> $GITHUB_OUTPUT
+
+      # Step 11: Create GitHub Release (if not already a release event)
+      - name: Create GitHub Release
+        if: github.event_name != 'release' && startsWith(steps.version.outputs.version, 'v')
+        uses: actions/github-script@v7
+        with:
+          script: |
+            try {
+              await github.rest.repos.createRelease({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag_name: '${{ steps.version.outputs.version }}',
+                name: 'Release ${{ steps.version.outputs.version }}',
+                body: `## 🚀 Production Deployment\n\n**Service URL:** ${{ steps.service.outputs.url }}\n**Commit:** ${{ steps.tags.outputs.short_sha }}\n\nDeployed via GitHub Actions`,
+                draft: false,
+                prerelease: false
+              });
+            } catch (error) {
+              console.log('Release already exists or error creating release:', error.message);
+            }
+
+      # Step 12: Output deployment summary
+      - name: Deployment Summary
+        run: |
+          echo "## 🎉 Production Deployment Successful" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Environment | **Production** 🔴 |" >> $GITHUB_STEP_SUMMARY
+          echo "| Service | \`${{ env.SERVICE_NAME }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Version | **${{ steps.version.outputs.version }}** |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | \`${{ steps.tags.outputs.short_sha }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Service URL | ${{ steps.service.outputs.url }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Image Tags Created:" >> $GITHUB_STEP_SUMMARY
+          echo "- \`${{ steps.version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`production-latest\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`production-${{ steps.tags.outputs.timestamp }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Test the deployment:" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "curl ${{ steps.service.outputs.url }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+      # Step 13: Notify on Slack (optional - add webhook URL to secrets)
+      - name: Notify Slack
+        if: success() && vars.SLACK_WEBHOOK_URL != ''
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "🎉 Production Deployment Successful",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Production Deployment*\n\n*Version:* ${{ steps.version.outputs.version }}\n*Service:* ${{ env.SERVICE_NAME }}\n*URL:* ${{ steps.service.outputs.url }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
