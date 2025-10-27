@@ -493,4 +493,108 @@ describe("QueueAPI", () => {
       expect(onTranscriptUpdate).not.toHaveBeenCalled();
     });
   });
+
+  describe("addCall", () => {
+    it("should throw error in production mode", async () => {
+      await expect(
+        QueueAPI.addCall({
+          callId: "call-123",
+          callerName: "Test",
+          phoneNumber: "+1234567890",
+          waitTime: 0,
+          aiStatus: "pending",
+          priority: "low",
+          keywords: [],
+          emotionalState: "calm",
+        })
+      ).rejects.toThrow("Adding calls manually is not supported");
+    });
+  });
+
+  describe("WebSocket message types", () => {
+    let mockWs: MockWebSocket;
+    let onUpdate: jest.Mock;
+
+    beforeEach(() => {
+      mockWs = new MockWebSocket();
+      const MockWebSocketConstructor = jest.fn(() => mockWs) as unknown as typeof WebSocket;
+
+      // Add static constants
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (MockWebSocketConstructor as any).OPEN = MockWebSocket.OPEN;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (MockWebSocketConstructor as any).CONNECTING = MockWebSocket.CONNECTING;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (MockWebSocketConstructor as any).CLOSING = MockWebSocket.CLOSING;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (MockWebSocketConstructor as any).CLOSED = MockWebSocket.CLOSED;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (global as any).WebSocket = MockWebSocketConstructor;
+
+      onUpdate = jest.fn();
+      QueueAPI.subscribeToQueueUpdates(onUpdate);
+      mockWs.simulateOpen();
+    });
+
+    it("should handle queue:error messages", () => {
+      mockWs.simulateMessage({
+        type: "queue:error",
+        error: "Test error message",
+      });
+
+      // Error should be logged but not crash
+      expect(onUpdate).not.toHaveBeenCalled();
+    });
+
+    it("should handle unknown message types", () => {
+      mockWs.simulateMessage({
+        type: "unknown:type",
+        data: {},
+      });
+
+      // Unknown messages should not crash
+      expect(onUpdate).not.toHaveBeenCalled();
+    });
+
+    it("should handle invalid JSON messages", () => {
+      // Simulate invalid message
+      if (mockWs.onmessage) {
+        mockWs.onmessage({ data: "invalid json {" });
+      }
+
+      // Should not crash
+      expect(onUpdate).not.toHaveBeenCalled();
+    });
+
+    it("should handle queue:updated with non-existent ID", () => {
+      mockWs.simulateMessage({
+        type: "queue:updated",
+        data: { id: "non-existent", status: "CLAIMED" },
+      });
+
+      // Should not update if ID doesn't exist
+      expect(onUpdate).not.toHaveBeenCalled();
+    });
+
+    it("should handle queue:removed with missing ID", () => {
+      mockWs.simulateMessage({
+        type: "queue:removed",
+        data: {},
+      });
+
+      // Should not crash
+      expect(onUpdate).not.toHaveBeenCalled();
+    });
+
+    it("should handle queue:transcript-updated with missing data", () => {
+      mockWs.simulateMessage({
+        type: "queue:transcript-updated",
+        data: {},
+      });
+
+      // Should not crash
+      expect(onUpdate).not.toHaveBeenCalled();
+    });
+  });
 });

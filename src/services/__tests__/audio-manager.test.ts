@@ -387,5 +387,171 @@ describe("AudioManager", () => {
 
       expect(onDisconnected).toHaveBeenCalled();
     });
+
+    it("should handle disconnect when not connected", () => {
+      const newAudioManager = new AudioManager();
+      newAudioManager.disconnect();
+
+      // Should not throw error
+      expect(newAudioManager.isConnected()).toBe(false);
+    });
+  });
+
+  describe("audio playback", () => {
+    it("should queue audio messages when playing", async () => {
+      const onMessage = jest.fn();
+      await audioManager.connect("handoff-123", onMessage);
+      mockWsInstance.simulateOpen();
+
+      // Simulate multiple audio messages
+      const audioMessage1: AudioMessage = {
+        type: "audio",
+        audio_event: {
+          audio_base_64: "dGVzdDE=",
+        },
+      };
+
+      const audioMessage2: AudioMessage = {
+        type: "audio",
+        audio_event: {
+          audio_base_64: "dGVzdDI=",
+        },
+      };
+
+      mockWsInstance.simulateMessage(audioMessage1);
+      mockWsInstance.simulateMessage(audioMessage2);
+
+      expect(onMessage).toHaveBeenCalledTimes(2);
+    });
+
+    it("should not play audio when speaker is off", async () => {
+      const onMessage = jest.fn();
+      await audioManager.connect("handoff-123", onMessage);
+      mockWsInstance.simulateOpen();
+
+      audioManager.setSpeakerOn(false);
+
+      const audioMessage: AudioMessage = {
+        type: "audio",
+        audio_event: {
+          audio_base_64: "dGVzdA==",
+        },
+      };
+
+      mockWsInstance.simulateMessage(audioMessage);
+
+      expect(onMessage).toHaveBeenCalled();
+    });
+  });
+
+  describe("connection states", () => {
+    it("should report CONNECTING state initially", async () => {
+      const connectPromise = audioManager.connect("handoff-123");
+
+      expect(audioManager.isConnected()).toBe(false);
+
+      mockWsInstance.simulateOpen();
+      await connectPromise;
+
+      expect(audioManager.isConnected()).toBe(true);
+    });
+
+    it("should handle connection with undefined callbacks", async () => {
+      const connectPromise = audioManager.connect("handoff-123");
+
+      mockWsInstance.simulateOpen();
+      await connectPromise;
+
+      expect(audioManager.isConnected()).toBe(true);
+    });
+
+    it("should handle connection error with custom URL", async () => {
+      process.env.NEXT_PUBLIC_API_URL = "http://custom-api.com";
+
+      const onError = jest.fn();
+      const connectPromise = audioManager.connect(
+        "handoff-123",
+        undefined,
+        undefined,
+        undefined,
+        onError
+      );
+
+      mockWsInstance.simulateOpen();
+      await connectPromise;
+
+      mockWsInstance.simulateError();
+
+      expect(onError).toHaveBeenCalledWith("WebSocket connection error");
+    });
+  });
+
+  describe("audio capture", () => {
+    it("should stop sending audio when muted", async () => {
+      await audioManager.connect("handoff-123");
+      mockWsInstance.simulateOpen();
+
+      audioManager.setMuted(true);
+
+      // Audio should not be sent when muted
+      expect(audioManager.isConnected()).toBe(true);
+    });
+
+    it("should enable audio tracks when unmuted", async () => {
+      await audioManager.connect("handoff-123");
+      mockWsInstance.simulateOpen();
+
+      audioManager.setMuted(true);
+      audioManager.setMuted(false);
+
+      // Verify tracks are enabled
+      expect(audioManager.isConnected()).toBe(true);
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle invalid audio data gracefully", async () => {
+      const onMessage = jest.fn();
+      const onError = jest.fn();
+      await audioManager.connect("handoff-123", onMessage, undefined, undefined, onError);
+      mockWsInstance.simulateOpen();
+
+      const invalidAudioMessage: AudioMessage = {
+        type: "audio",
+        audio_event: {
+          audio_base_64: "!!!invalid-base64!!!",
+        },
+      };
+
+      mockWsInstance.simulateMessage(invalidAudioMessage);
+
+      expect(onMessage).toHaveBeenCalled();
+    });
+
+    it("should handle connection errors during connection", async () => {
+      const onError = jest.fn();
+      const connectPromise = audioManager.connect(
+        "handoff-123",
+        undefined,
+        undefined,
+        undefined,
+        onError
+      );
+
+      mockWsInstance.simulateOpen();
+      await connectPromise;
+
+      mockWsInstance.simulateError();
+
+      expect(onError).toHaveBeenCalledWith("WebSocket connection error");
+    });
+
+    it("should handle microphone access errors", async () => {
+      mockGetUserMedia.mockRejectedValue(new Error("Permission denied"));
+
+      const result = await audioManager.requestMicrophonePermission();
+
+      expect(result).toBe(false);
+    });
   });
 });

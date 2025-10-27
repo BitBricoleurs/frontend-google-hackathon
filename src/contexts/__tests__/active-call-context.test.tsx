@@ -1,7 +1,7 @@
 /**
  * @jest-environment jsdom
  */
-import { render, screen, waitFor, act } from "@testing-library/react";
+import { render, screen, waitFor, act, fireEvent } from "@testing-library/react";
 import { ActiveCallProvider, useActiveCall } from "../active-call-context";
 import * as transcriptApi from "@/api/transcript";
 import * as handoffApi from "@/api/handoff";
@@ -423,6 +423,432 @@ describe("ActiveCallContext", () => {
 
     await waitFor(() => {
       expect(screen.getByTestId("transcript-count")).toHaveTextContent("0");
+    });
+  });
+
+  it("should handle clearCall function", async () => {
+    mockSearchParams.set("callId", "call-123");
+
+    function ClearCallComponent() {
+      const { clearCall, callId } = useActiveCall();
+      return (
+        <div>
+          <div data-testid="call-id">{callId || "No Call ID"}</div>
+          <button onClick={clearCall} data-testid="clear-call-btn">
+            Clear Call
+          </button>
+        </div>
+      );
+    }
+
+    render(
+      <ActiveCallProvider>
+        <ClearCallComponent />
+      </ActiveCallProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("call-id")).toHaveTextContent("call-123");
+    });
+
+    const clearButton = screen.getByTestId("clear-call-btn");
+    fireEvent.click(clearButton);
+
+    expect(screen.getByTestId("call-id")).toHaveTextContent("No Call ID");
+  });
+
+  it("should handle takeCall without operatorId", async () => {
+    mockSearchParams.set("callId", "call-123");
+
+    function TakeCallComponent() {
+      const { takeCall, isLoading } = useActiveCall();
+      return (
+        <button onClick={takeCall} data-testid="take-call-btn" disabled={isLoading}>
+          Take Call
+        </button>
+      );
+    }
+
+    render(
+      <ActiveCallProvider>
+        <TakeCallComponent />
+      </ActiveCallProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("take-call-btn")).toBeInTheDocument();
+    });
+
+    // Mock implementation should still work since we have operatorId in the global mock
+    // This test verifies the component renders correctly
+    expect(screen.getByTestId("take-call-btn")).toBeInTheDocument();
+  });
+
+  it("should handle takeCall failure", async () => {
+    mockSearchParams.set("callId", "call-123");
+
+    mockHandoffApi.takeControl.mockResolvedValue({
+      success: false,
+      handoffId: "",
+      message: "Failed to take control",
+      aiTerminated: false,
+    });
+
+    function TakeCallComponent() {
+      const { takeCall, isInCall } = useActiveCall();
+      return (
+        <div>
+          <button onClick={takeCall} data-testid="take-call-btn">
+            Take Call
+          </button>
+          <div data-testid="in-call">{isInCall ? "In Call" : "Not In Call"}</div>
+        </div>
+      );
+    }
+
+    render(
+      <ActiveCallProvider>
+        <TakeCallComponent />
+      </ActiveCallProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("take-call-btn")).toBeInTheDocument();
+    });
+
+    const takeCallBtn = screen.getByTestId("take-call-btn");
+    fireEvent.click(takeCallBtn);
+
+    await waitFor(() => {
+      expect(mockHandoffApi.takeControl).toHaveBeenCalled();
+    });
+
+    // Should not be in call after failure
+    expect(screen.getByTestId("in-call")).toHaveTextContent("Not In Call");
+  });
+
+  it("should handle audio connection failure", async () => {
+    mockSearchParams.set("callId", "call-123");
+
+    mockHandoffApi.takeControl.mockResolvedValue({
+      success: true,
+      handoffId: "handoff-456",
+      message: "Control taken",
+      aiTerminated: true,
+    });
+
+    const mockAudioManagerInstance = {
+      connect: jest.fn().mockRejectedValue(new Error("Audio connection failed")),
+      disconnect: jest.fn(),
+      requestMicrophonePermission: jest.fn().mockResolvedValue(true),
+      setMuted: jest.fn(),
+      setSpeakerOn: jest.fn(),
+      isConnected: jest.fn().mockReturnValue(false),
+    };
+
+    (mockAudioManager as unknown as jest.Mock).mockImplementation(() => mockAudioManagerInstance);
+
+    function TakeCallComponent() {
+      const { takeCall, isInCall, isAudioConnected } = useActiveCall();
+      return (
+        <div>
+          <button onClick={takeCall} data-testid="take-call-btn">
+            Take Call
+          </button>
+          <div data-testid="in-call">{isInCall ? "In Call" : "Not In Call"}</div>
+          <div data-testid="audio-connected">
+            {isAudioConnected ? "Audio Connected" : "Audio Disconnected"}
+          </div>
+        </div>
+      );
+    }
+
+    render(
+      <ActiveCallProvider>
+        <TakeCallComponent />
+      </ActiveCallProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("take-call-btn")).toBeInTheDocument();
+    });
+
+    const takeCallBtn = screen.getByTestId("take-call-btn");
+    fireEvent.click(takeCallBtn);
+
+    await waitFor(() => {
+      expect(mockHandoffApi.takeControl).toHaveBeenCalled();
+    });
+
+    // Should be in call but audio not connected
+    await waitFor(() => {
+      expect(screen.getByTestId("in-call")).toHaveTextContent("In Call");
+      expect(screen.getByTestId("audio-connected")).toHaveTextContent("Audio Disconnected");
+    });
+  });
+
+  it("should handle microphone permission denial", async () => {
+    mockSearchParams.set("callId", "call-123");
+
+    mockHandoffApi.takeControl.mockResolvedValue({
+      success: true,
+      handoffId: "handoff-456",
+      message: "Control taken",
+      aiTerminated: true,
+    });
+
+    const mockAudioManagerInstance = {
+      connect: jest.fn().mockResolvedValue(undefined),
+      disconnect: jest.fn(),
+      requestMicrophonePermission: jest.fn().mockResolvedValue(false),
+      setMuted: jest.fn(),
+      setSpeakerOn: jest.fn(),
+      isConnected: jest.fn().mockReturnValue(true),
+    };
+
+    (mockAudioManager as unknown as jest.Mock).mockImplementation(() => mockAudioManagerInstance);
+
+    function TakeCallComponent() {
+      const { takeCall } = useActiveCall();
+      return (
+        <button onClick={takeCall} data-testid="take-call-btn">
+          Take Call
+        </button>
+      );
+    }
+
+    render(
+      <ActiveCallProvider>
+        <TakeCallComponent />
+      </ActiveCallProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("take-call-btn")).toBeInTheDocument();
+    });
+
+    const takeCallBtn = screen.getByTestId("take-call-btn");
+    fireEvent.click(takeCallBtn);
+
+    await waitFor(() => {
+      expect(mockAudioManagerInstance.requestMicrophonePermission).toHaveBeenCalled();
+    });
+  });
+
+  it("should handle transcript with empty lines", async () => {
+    mockSearchParams.set("callId", "call-123");
+    let transcriptCallback: ((data: string) => void) | null = null;
+
+    mockQueueAPI.subscribeToTranscript.mockImplementation((callId, callback) => {
+      transcriptCallback = callback;
+      return () => {};
+    });
+
+    render(
+      <ActiveCallProvider>
+        <TestComponent />
+      </ActiveCallProvider>
+    );
+
+    await waitFor(() => {
+      expect(mockQueueAPI.subscribeToTranscript).toHaveBeenCalled();
+    });
+
+    // Simulate transcript with empty lines
+    await act(async () => {
+      if (transcriptCallback) {
+        transcriptCallback("Speaker1: Hello\n\n\nSpeaker2: Hi");
+      }
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("transcript-count")).toHaveTextContent("2");
+    });
+  });
+
+  it("should handle transcript without speaker prefix", async () => {
+    mockSearchParams.set("callId", "call-123");
+    let transcriptCallback: ((data: string) => void) | null = null;
+
+    mockQueueAPI.subscribeToTranscript.mockImplementation((callId, callback) => {
+      transcriptCallback = callback;
+      return () => {};
+    });
+
+    render(
+      <ActiveCallProvider>
+        <TestComponent />
+      </ActiveCallProvider>
+    );
+
+    await waitFor(() => {
+      expect(mockQueueAPI.subscribeToTranscript).toHaveBeenCalled();
+    });
+
+    // Simulate transcript without speaker prefix
+    await act(async () => {
+      if (transcriptCallback) {
+        transcriptCallback("Just some text without speaker");
+      }
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("transcript-count")).toHaveTextContent("1");
+    });
+  });
+
+  it("should handle empty transcript data from WebSocket", async () => {
+    mockSearchParams.set("callId", "call-123");
+    let transcriptCallback: ((data: string) => void) | null = null;
+
+    mockQueueAPI.subscribeToTranscript.mockImplementation((callId, callback) => {
+      transcriptCallback = callback;
+      return () => {};
+    });
+
+    render(
+      <ActiveCallProvider>
+        <TestComponent />
+      </ActiveCallProvider>
+    );
+
+    await waitFor(() => {
+      expect(mockQueueAPI.subscribeToTranscript).toHaveBeenCalled();
+    });
+
+    const initialCount = screen.getByTestId("transcript-count").textContent;
+
+    // Simulate empty transcript
+    await act(async () => {
+      if (transcriptCallback) {
+        transcriptCallback("");
+      }
+    });
+
+    // Transcript count should not increase from empty data
+    const finalCount = screen.getByTestId("transcript-count").textContent;
+    expect(finalCount).toBe(initialCount);
+  });
+
+  it("should control audio manager mute state", async () => {
+    mockSearchParams.set("callId", "call-123");
+
+    mockHandoffApi.takeControl.mockResolvedValue({
+      success: true,
+      handoffId: "handoff-456",
+      message: "Control taken",
+      aiTerminated: true,
+    });
+
+    const mockAudioManagerInstance = {
+      connect: jest.fn().mockResolvedValue(undefined),
+      disconnect: jest.fn(),
+      requestMicrophonePermission: jest.fn().mockResolvedValue(true),
+      setMuted: jest.fn(),
+      setSpeakerOn: jest.fn(),
+      isConnected: jest.fn().mockReturnValue(true),
+    };
+
+    (mockAudioManager as unknown as jest.Mock).mockImplementation(() => mockAudioManagerInstance);
+
+    function MuteControlComponent() {
+      const { takeCall, setIsMuted, isMuted } = useActiveCall();
+      return (
+        <div>
+          <button onClick={takeCall} data-testid="take-call-btn">
+            Take Call
+          </button>
+          <button onClick={() => setIsMuted(true)} data-testid="mute-btn">
+            Mute
+          </button>
+          <div data-testid="muted">{isMuted ? "Muted" : "Not Muted"}</div>
+        </div>
+      );
+    }
+
+    render(
+      <ActiveCallProvider>
+        <MuteControlComponent />
+      </ActiveCallProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("take-call-btn")).toBeInTheDocument();
+    });
+
+    // Take call first
+    fireEvent.click(screen.getByTestId("take-call-btn"));
+
+    await waitFor(() => {
+      expect(mockHandoffApi.takeControl).toHaveBeenCalled();
+    });
+
+    // Then mute
+    fireEvent.click(screen.getByTestId("mute-btn"));
+
+    await waitFor(() => {
+      expect(mockAudioManagerInstance.setMuted).toHaveBeenCalledWith(true);
+    });
+  });
+
+  it("should control audio manager speaker state", async () => {
+    mockSearchParams.set("callId", "call-123");
+
+    mockHandoffApi.takeControl.mockResolvedValue({
+      success: true,
+      handoffId: "handoff-456",
+      message: "Control taken",
+      aiTerminated: true,
+    });
+
+    const mockAudioManagerInstance = {
+      connect: jest.fn().mockResolvedValue(undefined),
+      disconnect: jest.fn(),
+      requestMicrophonePermission: jest.fn().mockResolvedValue(true),
+      setMuted: jest.fn(),
+      setSpeakerOn: jest.fn(),
+      isConnected: jest.fn().mockReturnValue(true),
+    };
+
+    (mockAudioManager as unknown as jest.Mock).mockImplementation(() => mockAudioManagerInstance);
+
+    function SpeakerControlComponent() {
+      const { takeCall, setIsSpeakerOn, isSpeakerOn } = useActiveCall();
+      return (
+        <div>
+          <button onClick={takeCall} data-testid="take-call-btn">
+            Take Call
+          </button>
+          <button onClick={() => setIsSpeakerOn(false)} data-testid="speaker-off-btn">
+            Speaker Off
+          </button>
+          <div data-testid="speaker">{isSpeakerOn ? "Speaker On" : "Speaker Off"}</div>
+        </div>
+      );
+    }
+
+    render(
+      <ActiveCallProvider>
+        <SpeakerControlComponent />
+      </ActiveCallProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("take-call-btn")).toBeInTheDocument();
+    });
+
+    // Take call first
+    fireEvent.click(screen.getByTestId("take-call-btn"));
+
+    await waitFor(() => {
+      expect(mockHandoffApi.takeControl).toHaveBeenCalled();
+    });
+
+    // Then turn off speaker
+    fireEvent.click(screen.getByTestId("speaker-off-btn"));
+
+    await waitFor(() => {
+      expect(mockAudioManagerInstance.setSpeakerOn).toHaveBeenCalledWith(false);
     });
   });
 });

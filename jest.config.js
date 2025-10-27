@@ -81,7 +81,7 @@ const customJestConfig = {
   // Ignore patterns
   testPathIgnorePatterns: ['/node_modules/', '/.next/'],
   transformIgnorePatterns: [
-    '/node_modules/(?!(msw|@mswjs|@bundled-es-modules|until-async|strict-event-emitter)/)',
+    '/node_modules/(?!(msw|@mswjs|@bundled-es-modules|until-async|strict-event-emitter|react-resizable-panels)/)',
     '^.+\\.module\\.(css|sass|scss)$',
   ],
 }
