@@ -107,11 +107,10 @@ describe("AudioManager", () => {
     (global as { WebSocket: unknown }).WebSocket = MockWebSocketConstructor;
 
     // Mock AudioContext
-    (global as { AudioContext?: typeof MockAudioContext }).AudioContext =
-      MockAudioContext as unknown as typeof AudioContext;
-    (
-      window as typeof window & { webkitAudioContext?: typeof MockAudioContext }
-    ).webkitAudioContext = MockAudioContext as unknown as typeof AudioContext;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (global as any).AudioContext = MockAudioContext as unknown as typeof AudioContext;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (window as any).webkitAudioContext = MockAudioContext as unknown as typeof AudioContext;
 
     // Mock btoa/atob
     global.btoa = jest.fn((str: string) => Buffer.from(str, "binary").toString("base64"));

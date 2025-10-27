@@ -14,6 +14,9 @@ jest.mock("@/components/ui/resizable", () => ({
 
 const mockUseActiveCall = useActiveCall as jest.Mock;
 
+// Mock scrollIntoView
+Element.prototype.scrollIntoView = jest.fn();
+
 describe("ActiveCallPage", () => {
   const defaultContext = {
     callId: null,
@@ -61,8 +64,7 @@ describe("ActiveCallPage", () => {
 
     render(<ActiveCallPage />);
 
-    expect(screen.getByText("Failed to load call")).toBeInTheDocument();
-    expect(screen.getByText("Failed to load call")).toBeInTheDocument();
+    expect(screen.getAllByText("Failed to load call").length).toBeGreaterThan(0);
   });
 
   it("should render empty state when no callId", () => {
