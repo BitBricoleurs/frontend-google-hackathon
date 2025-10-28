@@ -210,6 +210,61 @@ export function ActiveCallProvider({ children }: ActiveCallProviderProps) {
     }
   };
 
+  // WebSocket connection state monitoring
+  useEffect(() => {
+    console.log("🔌 [ACTIVE-CALL] Setting up connection state monitoring");
+
+    const unsubscribeState = QueueAPI.subscribeToConnectionState((state) => {
+      console.log("🔌 [ACTIVE-CALL] Connection state changed:", state);
+      setIsConnectedToWebSocket(state.isConnected);
+
+      if (!state.isConnected && state.error) {
+        console.warn("⚠️ [ACTIVE-CALL] Connection lost:", state.error);
+      }
+    });
+
+    const unsubscribeEvents = QueueAPI.subscribeToConnectionEvents((event) => {
+      console.log("📡 [ACTIVE-CALL] Connection event:", event.type);
+
+      switch (event.type) {
+        case "ai_terminated":
+          if ((event.data as { callId?: string })?.callId === callId) {
+            console.log("🤖 [ACTIVE-CALL] AI terminated for current call");
+            toast.info("AI conversation has ended");
+            setCallStatus("completed");
+          }
+          break;
+
+        case "call_ended":
+          if ((event.data as { callId?: string })?.callId === callId) {
+            const reason = (event.data as { reason?: string })?.reason;
+            console.log("📞 [ACTIVE-CALL] Call ended for current call:", reason);
+            toast.info(`Call ended: ${reason}`);
+            setCallStatus("ended");
+            // Auto-disconnect audio if in call
+            if (audioManagerRef.current) {
+              audioManagerRef.current.disconnect();
+              audioManagerRef.current = null;
+              setIsAudioConnected(false);
+            }
+          }
+          break;
+
+        case "session_terminated":
+          console.log("🔴 [ACTIVE-CALL] Session terminated");
+          const terminateReason = (event.data as { reason?: string })?.reason;
+          toast.error(`Session terminated: ${terminateReason}`);
+          break;
+      }
+    });
+
+    return () => {
+      console.log("🧹 [ACTIVE-CALL] Cleaning up connection monitoring");
+      unsubscribeState();
+      unsubscribeEvents();
+    };
+  }, [callId]);
+
   // WebSocket subscription for real-time transcript updates
   useEffect(() => {
     if (!callId) {
@@ -217,7 +272,6 @@ export function ActiveCallProvider({ children }: ActiveCallProviderProps) {
     }
 
     console.log(`📝 [ACTIVE-CALL] Setting up transcript subscription for call ${callId}`);
-    setIsConnectedToWebSocket(true);
     currentCallIdRef.current = callId;
 
     const unsubscribe = QueueAPI.subscribeToTranscript(callId, (transcriptData: string) => {
@@ -247,7 +301,6 @@ export function ActiveCallProvider({ children }: ActiveCallProviderProps) {
     return () => {
       console.log("🧹 [ACTIVE-CALL] Cleaning up transcript subscription");
       unsubscribe();
-      setIsConnectedToWebSocket(false);
 
       if (currentCallIdRef.current === callId) {
         currentCallIdRef.current = null;

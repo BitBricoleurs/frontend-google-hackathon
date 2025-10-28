@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import {
   PhoneCallIcon,
   PhoneXIcon,
@@ -16,9 +16,13 @@ import {
   BrainIcon,
   TranslateIcon,
   RecordIcon,
+  CheckCircleIcon,
+  InfoIcon,
 } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { useActiveCall } from "@/contexts/active-call-context";
+import { useQueue } from "@/contexts/queue-context";
+import { QueueAPI } from "@/services/queue-api";
 
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 
@@ -32,30 +36,32 @@ const mockCallData = {
   priority: "high",
 };
 
-// Mock AI insights
-const aiInsights = [
+// Mock AI insights (fallback)
+const mockAiInsights = [
   {
     type: "medical",
     icon: HeartStraightIcon,
     title: "Medical Keywords Detected",
     details: ["collapsed", "not breathing", "not responding"],
-    severity: "critical",
+    severity: "critical" as const,
   },
   {
     type: "emotion",
     icon: WarningCircleIcon,
     title: "Emotional State Analysis",
     details: ["High distress detected", "Panic indicators present"],
-    severity: "high",
+    severity: "high" as const,
   },
   {
     type: "location",
     icon: MapPinIcon,
     title: "Location Confirmed",
     details: ["123 Main Street, Apt 4B", "Coordinates: 40.7128°N, 74.0060°W"],
-    severity: "info",
+    severity: "info" as const,
   },
 ];
+
+type AIInsight = (typeof mockAiInsights)[number];
 
 function formatDuration(seconds: number | null): string {
   if (!seconds) return "00:00:00";
@@ -83,7 +89,123 @@ export default function ActiveCallPage() {
     isAudioConnected,
   } = useActiveCall();
 
+  const { calls } = useQueue();
   const transcriptEndRef = useRef<HTMLDivElement>(null);
+
+  // State for WebSocket connection monitoring
+  const [wsConnectionState, setWsConnectionState] = useState({
+    isConnected: false,
+    sessionId: null as string | null,
+    error: null as string | null,
+  });
+
+  // State for connection events
+  const [connectionEvents, setConnectionEvents] = useState<
+    Array<{ type: string; data: unknown; timestamp: string }>
+  >([]);
+
+  // Find current call data from queue
+  const currentCallData = useMemo(() => {
+    return calls.find((call) => call.callId === callId);
+  }, [calls, callId]);
+
+  // Subscribe to WebSocket connection state
+  useEffect(() => {
+    const unsubscribe = QueueAPI.subscribeToConnectionState((state) => {
+      setWsConnectionState({
+        isConnected: state.isConnected,
+        sessionId: state.sessionId || null,
+        error: state.error || null,
+      });
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Subscribe to connection events
+  useEffect(() => {
+    const unsubscribe = QueueAPI.subscribeToConnectionEvents((event) => {
+      setConnectionEvents((prev) => [event, ...prev].slice(0, 10)); // Keep last 10 events
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Generate AI insights from current call data
+  const aiInsights = useMemo((): AIInsight[] => {
+    if (!currentCallData) return mockAiInsights;
+
+    const insights: AIInsight[] = [];
+
+    // Priority/Urgency insight
+    const priorityConfig = {
+      high: { severity: "critical" as const, color: "red" },
+      medium: { severity: "high" as const, color: "yellow" },
+      low: { severity: "info" as const, color: "blue" },
+    };
+
+    const priorityInfo = priorityConfig[currentCallData.priority];
+    insights.push({
+      type: "priority",
+      icon: WarningCircleIcon,
+      title: `${currentCallData.priority.toUpperCase()} Priority Call`,
+      details: [
+        `Urgency Level: ${currentCallData.priority}`,
+        `Emotional State: ${currentCallData.emotionalState}`,
+        `Wait Time: ${Math.floor(currentCallData.waitTime / 60)} minutes`,
+      ],
+      severity: priorityInfo.severity,
+    });
+
+    // Medical keywords insight
+    if (currentCallData.keywords && currentCallData.keywords.length > 0) {
+      insights.push({
+        type: "medical",
+        icon: HeartStraightIcon,
+        title: "Key Symptoms Detected",
+        details: currentCallData.keywords,
+        severity: currentCallData.priority === "high" ? ("critical" as const) : ("high" as const),
+      });
+    }
+
+    // Emotional state insight
+    const emotionalStateMap = {
+      panic: { severity: "critical" as const, description: "Extreme distress detected" },
+      distress: { severity: "high" as const, description: "High stress levels" },
+      anxious: { severity: "high" as const, description: "Moderate anxiety present" },
+      calm: { severity: "info" as const, description: "Caller is relatively calm" },
+    };
+
+    const emotionalInfo = emotionalStateMap[currentCallData.emotionalState];
+    insights.push({
+      type: "emotion",
+      icon: currentCallData.emotionalState === "panic" ? WarningCircleIcon : InfoIcon,
+      title: "Emotional State Analysis",
+      details: [
+        emotionalInfo.description,
+        `AI Status: ${currentCallData.aiStatus}`,
+        currentCallData.emotionalState === "panic" ? "Immediate attention required" : "",
+      ].filter(Boolean),
+      severity: emotionalInfo.severity,
+    });
+
+    // Location info if available
+    if (currentCallData.callerName) {
+      insights.push({
+        type: "location",
+        icon: MapPinIcon,
+        title: "Caller Information",
+        details: [
+          `Name: ${currentCallData.callerName}`,
+          `Phone: ${currentCallData.phoneNumber}`,
+          `Call ID: ${currentCallData.callId}`,
+        ],
+        severity: "info" as const,
+      });
+    }
+
+    return insights;
+  }, [currentCallData]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -184,8 +306,18 @@ export default function ActiveCallPage() {
               <ClockIcon className="h-4 w-4" weight="bold" />
               <span>{displayDuration}</span>
             </div>
-            <span className="px-3 py-1 rounded-full text-xs font-medium bg-red-500/10 text-red-500 border border-red-500/20">
-              HIGH PRIORITY
+            {/* Dynamic Priority Badge from WebSocket data */}
+            <span
+              className={cn(
+                "px-3 py-1 rounded-full text-xs font-medium border uppercase",
+                currentCallData?.priority === "high"
+                  ? "bg-red-500/10 text-red-500 border-red-500/20"
+                  : currentCallData?.priority === "medium"
+                    ? "bg-yellow-500/10 text-yellow-500 border-yellow-500/20"
+                    : "bg-blue-500/10 text-blue-500 border-blue-500/20"
+              )}
+            >
+              {currentCallData?.priority || "HIGH"} PRIORITY
             </span>
           </div>
         </div>
@@ -253,11 +385,37 @@ export default function ActiveCallPage() {
 
                 {/* Insights List */}
                 <div className="flex-1 overflow-auto p-4 space-y-4">
+                  {/* WebSocket Connection Status */}
+                  <div className="rounded-lg border border-border bg-card p-3 mb-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={cn(
+                            "h-2 w-2 rounded-full",
+                            wsConnectionState.isConnected
+                              ? "bg-green-500 animate-pulse"
+                              : "bg-red-500"
+                          )}
+                        />
+                        <span className="text-xs text-muted-foreground">
+                          {wsConnectionState.isConnected
+                            ? "Real-time Updates Active"
+                            : "Disconnected"}
+                        </span>
+                      </div>
+                      {wsConnectionState.sessionId && (
+                        <span className="text-xs text-muted-foreground font-mono">
+                          {wsConnectionState.sessionId.slice(0, 8)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
                   {aiInsights.map((insight, index) => (
                     <InsightCard key={index} insight={insight} />
                   ))}
 
-                  {/* Caller Info Card */}
+                  {/* Caller Info Card - Real Data from WebSocket */}
                   <div className="rounded-lg border border-border bg-card p-4">
                     <div className="flex items-center gap-2 mb-3">
                       <UserCircleIcon className="h-5 w-5 text-primary" weight="duotone" />
@@ -267,19 +425,74 @@ export default function ActiveCallPage() {
                     </div>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
+                        <span className="text-muted-foreground">Name:</span>
+                        <span className="text-foreground font-medium">
+                          {currentCallData?.callerName || "Unknown"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
                         <span className="text-muted-foreground">Phone:</span>
-                        <span className="text-foreground font-medium">{mockCallData.callerId}</span>
+                        <span className="text-foreground font-medium font-mono text-xs">
+                          {currentCallData?.phoneNumber || mockCallData.callerId}
+                        </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Location:</span>
-                        <span className="text-foreground font-medium">Downtown</span>
+                        <span className="text-muted-foreground">AI Status:</span>
+                        <span
+                          className={cn(
+                            "text-foreground font-medium capitalize",
+                            currentCallData?.aiStatus === "connected" && "text-green-500",
+                            currentCallData?.aiStatus === "connecting" && "text-yellow-500",
+                            currentCallData?.aiStatus === "pending" && "text-gray-500"
+                          )}
+                        >
+                          {currentCallData?.aiStatus || "Unknown"}
+                        </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Previous Calls:</span>
-                        <span className="text-foreground font-medium">0</span>
+                        <span className="text-muted-foreground">Wait Time:</span>
+                        <span className="text-foreground font-medium">
+                          {currentCallData
+                            ? `${Math.floor(currentCallData.waitTime / 60)}m ${currentCallData.waitTime % 60}s`
+                            : "0m 0s"}
+                        </span>
                       </div>
                     </div>
                   </div>
+
+                  {/* Connection Events Log (for debugging) */}
+                  {connectionEvents.length > 0 && (
+                    <div className="rounded-lg border border-border bg-card p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <CheckCircleIcon className="h-5 w-5 text-primary" weight="duotone" />
+                        <span className="text-sm font-medium text-foreground">Recent Events</span>
+                      </div>
+                      <div className="space-y-1 max-h-32 overflow-y-auto">
+                        {connectionEvents.slice(0, 5).map((event, idx) => (
+                          <div
+                            key={idx}
+                            className="text-xs text-muted-foreground flex items-center gap-2 p-1"
+                          >
+                            <span
+                              className={cn(
+                                "h-1.5 w-1.5 rounded-full",
+                                event.type.includes("terminated") || event.type.includes("ended")
+                                  ? "bg-red-500"
+                                  : event.type.includes("connected") ||
+                                      event.type.includes("subscribed")
+                                    ? "bg-green-500"
+                                    : "bg-blue-500"
+                              )}
+                            />
+                            <span className="font-mono">{event.type}</span>
+                            <span className="text-muted-foreground/50">
+                              {new Date(event.timestamp).toLocaleTimeString()}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </ResizablePanel>
@@ -411,7 +624,7 @@ function TranscriptMessage({ message }: { message: TranscriptMessageType }) {
   );
 }
 
-function InsightCard({ insight }: { insight: (typeof aiInsights)[0] }) {
+function InsightCard({ insight }: { insight: AIInsight }) {
   const severityColors = {
     critical: "border-red-500/20 bg-red-500/5",
     high: "border-yellow-500/20 bg-yellow-500/5",
@@ -444,7 +657,7 @@ function InsightCard({ insight }: { insight: (typeof aiInsights)[0] }) {
         <span className="text-sm font-medium text-foreground">{insight.title}</span>
       </div>
       <ul className="space-y-1">
-        {insight.details.map((detail, index) => (
+        {insight.details.map((detail: string, index: number) => (
           <li key={index} className="text-xs text-muted-foreground pl-4">
             • {detail}
           </li>

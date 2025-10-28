@@ -1,4 +1,14 @@
-import { QueueCall, QueueEntry, queueEntryToQueueCall } from "@/types/queue";
+import {
+  QueueCall,
+  QueueEntry,
+  queueEntryToQueueCall,
+  ConnectedMessage,
+  SessionTerminatedMessage,
+  AITerminatedMessage,
+  CallEndedMessage,
+  SubscribedMessage,
+  UnsubscribedMessage,
+} from "@/types/queue";
 import * as queueApi from "@/api/queue";
 import { tokenManager } from "@/lib/token-manager";
 
@@ -73,6 +83,24 @@ const USE_MOCK_DATA = false;
  * 2. Ensuring NEXT_PUBLIC_API_URL is set in environment variables
  * 3. Implementing the actual API endpoints on the backend
  */
+/**
+ * Connection state callback type
+ */
+export type ConnectionStateCallback = (state: {
+  isConnected: boolean;
+  sessionId?: string;
+  error?: string;
+}) => void;
+
+/**
+ * Connection event callback type
+ */
+export type ConnectionEventCallback = (event: {
+  type: string;
+  data: unknown;
+  timestamp: string;
+}) => void;
+
 export class QueueAPI {
   // Shared WebSocket instance
   private static ws: WebSocket | null = null;
@@ -81,6 +109,11 @@ export class QueueAPI {
   private static wsReadyResolve: (() => void) | null = null;
   private static queueUpdateCallbacks = new Set<(calls: QueueCall[]) => void>();
   private static queueData = new Map<string, QueueEntry>();
+
+  // Connection state management
+  private static sessionId: string | null = null;
+  private static connectionStateCallbacks = new Set<ConnectionStateCallback>();
+  private static connectionEventCallbacks = new Set<ConnectionEventCallback>();
 
   /**
    * Fetch all calls currently in the waiting queue
@@ -362,6 +395,10 @@ export class QueueAPI {
 
     ws.onopen = () => {
       console.log("✅ WebSocket connected to queue dashboard");
+      // Notify connection state (session ID will be set when 'connected' message arrives)
+      this.notifyConnectionState({
+        isConnected: true,
+      });
       // Resolve the ready promise if this is still the current WebSocket
       if (this.ws === ws && this.wsReadyResolve) {
         console.log("✅ Resolving WebSocket ready promise");
@@ -375,6 +412,103 @@ export class QueueAPI {
         const message = JSON.parse(event.data);
 
         switch (message.type) {
+          // Connection Control Messages
+          case "connection":
+            console.log("🔌 [CONNECTION] Connection initiated");
+            this.notifyConnectionEvent({
+              type: "connection",
+              data: message.data || {},
+              timestamp: new Date().toISOString(),
+            });
+            break;
+
+          case "connected":
+            console.log("✅ [CONNECTION] Connected to server");
+            if (message.data?.sessionId) {
+              this.sessionId = message.data.sessionId;
+              this.notifyConnectionState({
+                isConnected: true,
+                sessionId: message.data.sessionId,
+              });
+            }
+            this.notifyConnectionEvent({
+              type: "connected",
+              data: message.data,
+              timestamp: message.data?.timestamp || new Date().toISOString(),
+            });
+            break;
+
+          case "session_terminated":
+            console.log("🔴 [CONNECTION] Session terminated:", message.data?.reason);
+            this.notifyConnectionState({
+              isConnected: false,
+              error: message.data?.reason,
+            });
+            this.notifyConnectionEvent({
+              type: "session_terminated",
+              data: message.data,
+              timestamp: message.data?.timestamp || new Date().toISOString(),
+            });
+            // Clear session
+            this.sessionId = null;
+            break;
+
+          case "ai_terminated":
+            console.log("🤖 [AI] AI conversation terminated for call:", message.data?.callId);
+            this.notifyConnectionEvent({
+              type: "ai_terminated",
+              data: message.data,
+              timestamp: message.data?.timestamp || new Date().toISOString(),
+            });
+            // Update queue entry status if exists
+            if (message.data?.callId) {
+              const entry = Array.from(this.queueData.values()).find(
+                (e) => e.callId === message.data.callId
+              );
+              if (entry) {
+                entry.status = "COMPLETED";
+                this.queueData.set(entry.id, entry);
+                const calls = Array.from(this.queueData.values()).map(queueEntryToQueueCall);
+                this.queueUpdateCallbacks.forEach((callback) => callback(calls));
+              }
+            }
+            break;
+
+          case "call_ended":
+            console.log("📞 [CALL] Call ended:", message.data?.callId, "-", message.data?.reason);
+            this.notifyConnectionEvent({
+              type: "call_ended",
+              data: message.data,
+              timestamp: message.data?.timestamp || new Date().toISOString(),
+            });
+            // Remove from queue
+            if (message.data?.queueEntryId) {
+              this.queueData.delete(message.data.queueEntryId);
+              const calls = Array.from(this.queueData.values()).map(queueEntryToQueueCall);
+              this.queueUpdateCallbacks.forEach((callback) => callback(calls));
+              console.log("➖ [QUEUE] Call removed from queue:", message.data.queueEntryId);
+            }
+            break;
+
+          case "subscribed":
+            console.log("✅ [SUBSCRIPTION] Subscribed to:", message.data?.subscription);
+            this.notifyConnectionEvent({
+              type: "subscribed",
+              data: message.data,
+              timestamp: message.data?.timestamp || new Date().toISOString(),
+            });
+            break;
+
+          case "unsubscribed":
+            console.log("✅ [SUBSCRIPTION] Unsubscribed from:", message.data?.subscription);
+            this.notifyConnectionEvent({
+              type: "unsubscribed",
+              data: message.data,
+              timestamp: message.data?.timestamp || new Date().toISOString(),
+            });
+            break;
+
+          // Queue Messages
           case "queue:initial":
             console.log("📋 [QUEUE] Initial queue data received");
             this.queueData.clear();
@@ -437,6 +571,10 @@ export class QueueAPI {
 
           case "queue:error":
             console.error("❌ [WEBSOCKET] Error:", message.error);
+            this.notifyConnectionState({
+              isConnected: false,
+              error: message.error,
+            });
             break;
 
           default:
@@ -449,15 +587,29 @@ export class QueueAPI {
 
     ws.onerror = (error) => {
       console.error("❌ WebSocket error:", error);
+      this.notifyConnectionState({
+        isConnected: false,
+        error: "WebSocket connection error",
+      });
     };
 
-    ws.onclose = () => {
-      console.log("🔌 WebSocket disconnected from queue dashboard");
+    ws.onclose = (event) => {
+      console.log("🔌 WebSocket disconnected from queue dashboard", {
+        code: event.code,
+        reason: event.reason,
+        wasClean: event.wasClean,
+      });
+      // Notify connection state
+      this.notifyConnectionState({
+        isConnected: false,
+        error: event.reason || "Connection closed",
+      });
       // Only clear if this is the current WebSocket instance
       if (this.ws === ws) {
         this.ws = null;
         this.wsReadyPromise = null;
         this.wsReadyResolve = null;
+        this.sessionId = null;
       }
     };
 
@@ -602,6 +754,100 @@ export class QueueAPI {
   }
 
   /**
+   * Subscribe to connection state changes
+   *
+   * @param callback - Function called when connection state changes
+   * @returns Function to unsubscribe
+   */
+  static subscribeToConnectionState(callback: ConnectionStateCallback): () => void {
+    this.connectionStateCallbacks.add(callback);
+    console.log(
+      "🔌 [CONNECTION] Added connection state callback. Total subscribers:",
+      this.connectionStateCallbacks.size
+    );
+
+    // Send initial state if connected
+    if (this.ws?.readyState === WebSocket.OPEN && this.sessionId) {
+      callback({
+        isConnected: true,
+        sessionId: this.sessionId,
+      });
+    }
+
+    return () => {
+      this.connectionStateCallbacks.delete(callback);
+      console.log(
+        "🔌 [CONNECTION] Removed connection state callback. Remaining:",
+        this.connectionStateCallbacks.size
+      );
+    };
+  }
+
+  /**
+   * Subscribe to connection events (connected, terminated, call_ended, etc.)
+   *
+   * @param callback - Function called when connection events occur
+   * @returns Function to unsubscribe
+   */
+  static subscribeToConnectionEvents(callback: ConnectionEventCallback): () => void {
+    this.connectionEventCallbacks.add(callback);
+    console.log(
+      "📡 [CONNECTION] Added connection event callback. Total subscribers:",
+      this.connectionEventCallbacks.size
+    );
+
+    return () => {
+      this.connectionEventCallbacks.delete(callback);
+      console.log(
+        "📡 [CONNECTION] Removed connection event callback. Remaining:",
+        this.connectionEventCallbacks.size
+      );
+    };
+  }
+
+  /**
+   * Get current connection state
+   */
+  static getConnectionState(): { isConnected: boolean; sessionId: string | null } {
+    return {
+      isConnected: this.ws?.readyState === WebSocket.OPEN,
+      sessionId: this.sessionId,
+    };
+  }
+
+  /**
+   * Notify all connection state subscribers
+   * @private
+   */
+  private static notifyConnectionState(state: {
+    isConnected: boolean;
+    sessionId?: string;
+    error?: string;
+  }) {
+    this.connectionStateCallbacks.forEach((callback) => {
+      try {
+        callback(state);
+      } catch (error) {
+        console.error("❌ [CONNECTION] Error in connection state callback:", error);
+      }
+    });
+  }
+
+  /**
+   * Notify all connection event subscribers
+   * @private
+   */
+  private static notifyConnectionEvent(event: { type: string; data: unknown; timestamp: string }) {
+    this.connectionEventCallbacks.forEach((callback) => {
+      try {
+        callback(event);
+      } catch (error) {
+        console.error("❌ [CONNECTION] Error in connection event callback:", error);
+      }
+    });
+  }
+
+  /**
    * Reset WebSocket state - FOR TESTING ONLY
    * @internal
    */
@@ -615,6 +861,9 @@ export class QueueAPI {
     this.wsReadyResolve = null;
     this.queueUpdateCallbacks.clear();
     this.queueData.clear();
+    this.sessionId = null;
+    this.connectionStateCallbacks.clear();
+    this.connectionEventCallbacks.clear();
   }
 }
 

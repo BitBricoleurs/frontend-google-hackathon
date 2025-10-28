@@ -221,3 +221,126 @@ export function queueEntryToQueueCall(entry: QueueEntry): QueueCall {
     emotionalState,
   };
 }
+
+/**
+ * WebSocket Connection Control Message Types
+ * These messages manage the lifecycle and state of WebSocket connections
+ */
+
+/**
+ * Connection control message types
+ */
+export type ConnectionMessageType =
+  | "connection"
+  | "connected"
+  | "session_terminated"
+  | "ai_terminated"
+  | "call_ended"
+  | "subscribed"
+  | "unsubscribed";
+
+/**
+ * Base WebSocket message structure
+ */
+export interface WebSocketMessage {
+  type: string;
+  data?: unknown;
+  error?: string;
+}
+
+/**
+ * Connection message - initial connection request from client
+ */
+export interface ConnectionMessage extends WebSocketMessage {
+  type: "connection";
+  data?: {
+    clientId?: string;
+    timestamp?: string;
+  };
+}
+
+/**
+ * Connected message - confirmation from server that connection is established
+ */
+export interface ConnectedMessage extends WebSocketMessage {
+  type: "connected";
+  data: {
+    sessionId: string;
+    timestamp: string;
+    message?: string;
+  };
+}
+
+/**
+ * Session terminated message - server indicates session has ended
+ */
+export interface SessionTerminatedMessage extends WebSocketMessage {
+  type: "session_terminated";
+  data: {
+    sessionId: string;
+    reason: string;
+    timestamp: string;
+  };
+}
+
+/**
+ * AI terminated message - AI conversation has ended
+ */
+export interface AITerminatedMessage extends WebSocketMessage {
+  type: "ai_terminated";
+  data: {
+    callId: string;
+    reason: string;
+    timestamp: string;
+  };
+}
+
+/**
+ * Call ended message - call has been completed or disconnected
+ */
+export interface CallEndedMessage extends WebSocketMessage {
+  type: "call_ended";
+  data: {
+    callId: string;
+    queueEntryId?: string;
+    reason: string;
+    duration?: number;
+    timestamp: string;
+  };
+}
+
+/**
+ * Subscribed message - confirmation that subscription was successful
+ */
+export interface SubscribedMessage extends WebSocketMessage {
+  type: "subscribed";
+  data: {
+    subscription: string;
+    callId?: string;
+    timestamp: string;
+  };
+}
+
+/**
+ * Unsubscribed message - confirmation that unsubscription was successful
+ */
+export interface UnsubscribedMessage extends WebSocketMessage {
+  type: "unsubscribed";
+  data: {
+    subscription: string;
+    callId?: string;
+    timestamp: string;
+  };
+}
+
+/**
+ * Union type for all connection control messages
+ */
+export type ConnectionControlMessage =
+  | ConnectionMessage
+  | ConnectedMessage
+  | SessionTerminatedMessage
+  | AITerminatedMessage
+  | CallEndedMessage
+  | SubscribedMessage
+  | UnsubscribedMessage;
