@@ -4,8 +4,12 @@
 import { render, screen } from "@testing-library/react";
 import ActiveCallPage from "../page";
 import { useActiveCall } from "@/contexts/active-call-context";
+import { useQueue } from "@/contexts/queue-context";
+import { QueueAPI } from "@/services/queue-api";
 
 jest.mock("@/contexts/active-call-context");
+jest.mock("@/contexts/queue-context");
+jest.mock("@/services/queue-api");
 jest.mock("@/components/ui/resizable", () => ({
   ResizableHandle: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
   ResizablePanel: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
@@ -13,6 +17,8 @@ jest.mock("@/components/ui/resizable", () => ({
 }));
 
 const mockUseActiveCall = useActiveCall as jest.Mock;
+const mockUseQueue = useQueue as jest.Mock;
+const mockQueueAPI = QueueAPI as jest.Mocked<typeof QueueAPI>;
 
 // Mock scrollIntoView
 Element.prototype.scrollIntoView = jest.fn();
@@ -43,6 +49,14 @@ describe("ActiveCallPage", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockUseActiveCall.mockReturnValue(defaultContext);
+    mockUseQueue.mockReturnValue({
+      calls: [],
+      stats: null,
+      isLoading: false,
+      error: null,
+    });
+    mockQueueAPI.subscribeToConnectionState.mockReturnValue(() => {});
+    mockQueueAPI.subscribeToConnectionEvents.mockReturnValue(() => {});
   });
 
   it("should render loading state", () => {

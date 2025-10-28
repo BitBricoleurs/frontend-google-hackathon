@@ -40,6 +40,8 @@ describe("ActiveCallContext", () => {
     });
 
     mockQueueAPI.subscribeToTranscript.mockReturnValue(() => {});
+    mockQueueAPI.subscribeToConnectionState.mockReturnValue(() => {});
+    mockQueueAPI.subscribeToConnectionEvents.mockReturnValue(() => {});
 
     mockTranscriptApi.getFormattedTranscript.mockResolvedValue({
       callId: "call-123",
