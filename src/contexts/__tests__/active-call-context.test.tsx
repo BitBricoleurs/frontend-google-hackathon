@@ -868,4 +868,161 @@ describe("ActiveCallContext", () => {
       expect(mockQueueAPI.subscribeToConnectionEvents).toHaveBeenCalled();
     });
   });
+
+  it("should handle microphone permission denied", async () => {
+    mockSearchParams.set("callId", "call-123");
+
+    mockHandoffApi.takeControl.mockResolvedValue({
+      success: true,
+      handoffId: "handoff-789",
+      message: "Control taken",
+      aiTerminated: true,
+    });
+
+    const mockAudioManagerInstance = {
+      connect: jest.fn().mockResolvedValue(undefined),
+      disconnect: jest.fn(),
+      requestMicrophonePermission: jest.fn().mockResolvedValue(false), // Permission denied
+      setMuted: jest.fn(),
+      setSpeakerOn: jest.fn(),
+      isConnected: jest.fn().mockReturnValue(true),
+    };
+
+    (mockAudioManager as unknown as jest.Mock).mockImplementation(() => mockAudioManagerInstance);
+
+    function TakeCallComponent() {
+      const { takeCall } = useActiveCall();
+      return (
+        <button onClick={takeCall} data-testid="take-call-btn">
+          Take Call
+        </button>
+      );
+    }
+
+    render(
+      <ActiveCallProvider>
+        <TakeCallComponent />
+      </ActiveCallProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("take-call-btn")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId("take-call-btn"));
+
+    await waitFor(() => {
+      expect(mockHandoffApi.takeControl).toHaveBeenCalled();
+      expect(mockAudioManagerInstance.requestMicrophonePermission).toHaveBeenCalled();
+    });
+  });
+
+  it.skip("should handle audio connection error", async () => {
+    mockSearchParams.set("callId", "call-123");
+
+    mockHandoffApi.takeControl.mockResolvedValue({
+      success: true,
+      handoffId: "handoff-error",
+      message: "Control taken",
+      aiTerminated: true,
+    });
+
+    const mockAudioManagerInstance = {
+      connect: jest.fn().mockRejectedValue(new Error("Audio connection failed")),
+      disconnect: jest.fn(),
+      requestMicrophonePermission: jest.fn().mockResolvedValue(true),
+      setMuted: jest.fn(),
+      setSpeakerOn: jest.fn(),
+      isConnected: jest.fn().mockReturnValue(false),
+    };
+
+    (mockAudioManager as unknown as jest.Mock).mockImplementation(() => mockAudioManagerInstance);
+
+    function TakeCallComponent() {
+      const { takeCall } = useActiveCall();
+      return (
+        <button onClick={takeCall} data-testid="take-call-btn">
+          Take Call
+        </button>
+      );
+    }
+
+    render(
+      <ActiveCallProvider>
+        <TakeCallComponent />
+      </ActiveCallProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("take-call-btn")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId("take-call-btn"));
+
+    await waitFor(() => {
+      expect(mockHandoffApi.takeControl).toHaveBeenCalled();
+    });
+  });
+
+  it("should handle clearCall with audio manager cleanup", async () => {
+    mockSearchParams.set("callId", "call-123");
+
+    mockHandoffApi.takeControl.mockResolvedValue({
+      success: true,
+      handoffId: "handoff-clear",
+      message: "Control taken",
+      aiTerminated: true,
+    });
+
+    const mockAudioManagerInstance = {
+      connect: jest.fn().mockResolvedValue(undefined),
+      disconnect: jest.fn(),
+      requestMicrophonePermission: jest.fn().mockResolvedValue(true),
+      setMuted: jest.fn(),
+      setSpeakerOn: jest.fn(),
+      isConnected: jest.fn().mockReturnValue(true),
+    };
+
+    (mockAudioManager as unknown as jest.Mock).mockImplementation(() => mockAudioManagerInstance);
+
+    function TestClearComponent() {
+      const { takeCall, clearCall, isInCall } = useActiveCall();
+      return (
+        <div>
+          <button onClick={takeCall} data-testid="take-call-btn">
+            Take Call
+          </button>
+          <button onClick={clearCall} data-testid="clear-call-btn">
+            Clear Call
+          </button>
+          <div data-testid="in-call">{isInCall ? "In Call" : "Not In Call"}</div>
+        </div>
+      );
+    }
+
+    render(
+      <ActiveCallProvider>
+        <TestClearComponent />
+      </ActiveCallProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("take-call-btn")).toBeInTheDocument();
+    });
+
+    // Take call first
+    fireEvent.click(screen.getByTestId("take-call-btn"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("in-call")).toHaveTextContent("In Call");
+    });
+
+    // Then clear call
+    fireEvent.click(screen.getByTestId("clear-call-btn"));
+
+    await waitFor(() => {
+      expect(mockAudioManagerInstance.disconnect).toHaveBeenCalled();
+      expect(screen.getByTestId("in-call")).toHaveTextContent("Not In Call");
+    });
+  });
 });
