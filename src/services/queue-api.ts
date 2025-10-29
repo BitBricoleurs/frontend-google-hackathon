@@ -102,13 +102,18 @@ export type ConnectionEventCallback = (event: {
 }) => void;
 
 export class QueueAPI {
-  // Shared WebSocket instance
+  // Shared WebSocket instance for queue dashboard
   private static ws: WebSocket | null = null;
   private static transcriptCallbacks = new Map<string, (transcript: string) => void>();
   private static wsReadyPromise: Promise<void> | null = null;
   private static wsReadyResolve: (() => void) | null = null;
   private static queueUpdateCallbacks = new Set<(calls: QueueCall[]) => void>();
   private static queueData = new Map<string, QueueEntry>();
+
+  // Second WebSocket instance for realtime dashboard (domain events)
+  private static realtimeWs: WebSocket | null = null;
+  private static realtimeWsReadyPromise: Promise<void> | null = null;
+  private static realtimeWsReadyResolve: (() => void) | null = null;
 
   // Connection state management
   private static sessionId: string | null = null;
@@ -352,14 +357,23 @@ export class QueueAPI {
     );
 
     // Check if WebSocket is already connected or connecting
-    if (
+    const wsAlreadyConnected =
       this.ws &&
-      (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)
-    ) {
-      console.log("🔌 [QUEUE] Reusing existing WebSocket connection");
+      (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING);
 
+    // Initialize realtime dashboard WebSocket for domain events (if not already connected)
+    const isRealtimeConnected =
+      this.realtimeWs &&
+      (this.realtimeWs.readyState === WebSocket.OPEN ||
+        this.realtimeWs.readyState === WebSocket.CONNECTING);
+
+    if (!isRealtimeConnected) {
+      this.initializeRealtimeDashboard(wsUrl);
+    }
+
+    if (wsAlreadyConnected) {
       // If already open, send the current queue data immediately
-      if (this.ws.readyState === WebSocket.OPEN && this.queueData.size > 0) {
+      if (this.ws!.readyState === WebSocket.OPEN && this.queueData.size > 0) {
         const calls = Array.from(this.queueData.values()).map(queueEntryToQueueCall);
         onUpdate(calls);
       }
@@ -367,20 +381,24 @@ export class QueueAPI {
       // Return cleanup function
       return () => {
         this.queueUpdateCallbacks.delete(onUpdate);
-        console.log(
-          "🔌 [QUEUE] Removed queue update callback. Remaining subscribers:",
-          this.queueUpdateCallbacks.size
-        );
 
         // Close WebSocket only if no more subscribers
-        if (this.queueUpdateCallbacks.size === 0 && this.ws) {
-          console.log("🔌 [QUEUE] No more subscribers, closing WebSocket");
-          this.ws.close();
+        if (this.queueUpdateCallbacks.size === 0) {
+          if (this.ws) {
+            console.log("🔌 [QUEUE] No more subscribers, closing queue WebSocket");
+            this.ws.close();
+          }
+          if (this.realtimeWs) {
+            console.log("🔌 [REALTIME] Closing realtime dashboard WebSocket");
+            this.realtimeWs.close();
+          }
         }
       };
     }
 
     console.log("🔌 [QUEUE] Creating new WebSocket connection...");
+    console.log("🔍 [DEBUG] WebSocket URL:", `${wsUrl}/ws/queue-dashboard`);
+    console.log("🔍 [DEBUG] Has token:", !!token);
 
     // Create a promise that resolves when WebSocket is ready
     // Do this BEFORE creating the WebSocket to ensure it's always available
@@ -391,17 +409,13 @@ export class QueueAPI {
     }
 
     const ws = new WebSocket(`${wsUrl}/ws/queue-dashboard?token=${token}`);
-    this.ws = ws; // Store the shared WebSocket instance
+    this.ws = ws;
 
     ws.onopen = () => {
-      console.log("✅ WebSocket connected to queue dashboard");
-      // Notify connection state (session ID will be set when 'connected' message arrives)
       this.notifyConnectionState({
         isConnected: true,
       });
-      // Resolve the ready promise if this is still the current WebSocket
       if (this.ws === ws && this.wsReadyResolve) {
-        console.log("✅ Resolving WebSocket ready promise");
         this.wsReadyResolve();
         this.wsReadyResolve = null;
       }
@@ -412,9 +426,7 @@ export class QueueAPI {
         const message = JSON.parse(event.data);
 
         switch (message.type) {
-          // Connection Control Messages
           case "connection":
-            console.log("🔌 [CONNECTION] Connection initiated");
             this.notifyConnectionEvent({
               type: "connection",
               data: message.data || {},
@@ -423,7 +435,6 @@ export class QueueAPI {
             break;
 
           case "connected":
-            console.log("✅ [CONNECTION] Connected to server");
             if (message.data?.sessionId) {
               this.sessionId = message.data.sessionId;
               this.notifyConnectionState({
@@ -439,7 +450,6 @@ export class QueueAPI {
             break;
 
           case "session_terminated":
-            console.log("🔴 [CONNECTION] Session terminated:", message.data?.reason);
             this.notifyConnectionState({
               isConnected: false,
               error: message.data?.reason,
@@ -449,18 +459,15 @@ export class QueueAPI {
               data: message.data,
               timestamp: message.data?.timestamp || new Date().toISOString(),
             });
-            // Clear session
             this.sessionId = null;
             break;
 
           case "ai_terminated":
-            console.log("🤖 [AI] AI conversation terminated for call:", message.data?.callId);
             this.notifyConnectionEvent({
               type: "ai_terminated",
               data: message.data,
               timestamp: message.data?.timestamp || new Date().toISOString(),
             });
-            // Update queue entry status if exists
             if (message.data?.callId) {
               const entry = Array.from(this.queueData.values()).find(
                 (e) => e.callId === message.data.callId
@@ -475,23 +482,19 @@ export class QueueAPI {
             break;
 
           case "call_ended":
-            console.log("📞 [CALL] Call ended:", message.data?.callId, "-", message.data?.reason);
             this.notifyConnectionEvent({
               type: "call_ended",
               data: message.data,
               timestamp: message.data?.timestamp || new Date().toISOString(),
             });
-            // Remove from queue
             if (message.data?.queueEntryId) {
               this.queueData.delete(message.data.queueEntryId);
               const calls = Array.from(this.queueData.values()).map(queueEntryToQueueCall);
               this.queueUpdateCallbacks.forEach((callback) => callback(calls));
-              console.log("➖ [QUEUE] Call removed from queue:", message.data.queueEntryId);
             }
             break;
 
           case "subscribed":
-            console.log("✅ [SUBSCRIPTION] Subscribed to:", message.data?.subscription);
             this.notifyConnectionEvent({
               type: "subscribed",
               data: message.data,
@@ -500,7 +503,6 @@ export class QueueAPI {
             break;
 
           case "unsubscribed":
-            console.log("✅ [SUBSCRIPTION] Unsubscribed from:", message.data?.subscription);
             this.notifyConnectionEvent({
               type: "unsubscribed",
               data: message.data,
@@ -508,18 +510,14 @@ export class QueueAPI {
             });
             break;
 
-          // Queue Messages
           case "queue:initial":
-            console.log("📋 [QUEUE] Initial queue data received");
             this.queueData.clear();
             if (Array.isArray(message.data)) {
               message.data.forEach((entry: QueueEntry) => {
                 this.queueData.set(entry.id, entry);
               });
               const calls = Array.from(this.queueData.values()).map(queueEntryToQueueCall);
-              // Notify ALL subscribers
               this.queueUpdateCallbacks.forEach((callback) => callback(calls));
-              console.log("📋 [QUEUE] Loaded", calls.length, "calls");
             }
             break;
 
@@ -527,19 +525,17 @@ export class QueueAPI {
             if (message.data) {
               this.queueData.set(message.data.id, message.data);
               const calls = Array.from(this.queueData.values()).map(queueEntryToQueueCall);
-              // Notify ALL subscribers
               this.queueUpdateCallbacks.forEach((callback) => callback(calls));
-              console.log("➕ [QUEUE] Call added - Queue now has", calls.length, "calls");
             }
             break;
 
           case "queue:updated":
             if (message.data && this.queueData.has(message.data.id)) {
-              this.queueData.set(message.data.id, message.data);
+              const existingEntry = this.queueData.get(message.data.id);
+              const mergedEntry = { ...existingEntry, ...message.data };
+              this.queueData.set(message.data.id, mergedEntry);
               const calls = Array.from(this.queueData.values()).map(queueEntryToQueueCall);
-              // Notify ALL subscribers
               this.queueUpdateCallbacks.forEach((callback) => callback(calls));
-              console.log("🔄 [QUEUE] Call updated:", message.data.id);
             }
             break;
 
@@ -547,9 +543,7 @@ export class QueueAPI {
             if (message.data?.id) {
               this.queueData.delete(message.data.id);
               const calls = Array.from(this.queueData.values()).map(queueEntryToQueueCall);
-              // Notify ALL subscribers
               this.queueUpdateCallbacks.forEach((callback) => callback(calls));
-              console.log("➖ [QUEUE] Call removed:", message.data.id);
             }
             break;
 
@@ -557,16 +551,58 @@ export class QueueAPI {
             if (message.data?.callId && message.data?.transcript) {
               const callback = this.transcriptCallbacks.get(message.data.callId);
               if (callback) {
-                console.log("📝 [TRANSCRIPT] Update received for call:", message.data.callId);
                 callback(message.data.transcript);
-              } else {
-                console.warn("⚠️ [TRANSCRIPT] No callback for callId:", message.data.callId);
+              }
+            }
+            break;
+
+          case "queue:call-info-updated":
+            // This handler is kept for backward compatibility but the new realtime WebSocket
+            // handles CallInfoUpdatedEvent via domain events
+            if (message.data?.callId) {
+              const entryToUpdate = Array.from(this.queueData.entries()).find(
+                ([, entry]) => entry.callId === message.data.callId
+              );
+              if (entryToUpdate) {
+                const [entryId, existingEntry] = entryToUpdate;
+                const updatedEntry = {
+                  ...existingEntry,
+                  ...(message.data.priority && { priority: message.data.priority }),
+                  ...(message.data.priorityReason && {
+                    priorityReason: message.data.priorityReason,
+                  }),
+                  ...(message.data.chiefComplaint && {
+                    chiefComplaint: message.data.chiefComplaint,
+                  }),
+                  ...(message.data.currentSymptoms && {
+                    keySymptoms: message.data.currentSymptoms
+                      .split(",")
+                      .map((s: string) => s.trim()),
+                  }),
+                  ...(message.data.aiSummary && { aiSummary: message.data.aiSummary }),
+                  ...(message.data.aiRecommendation && {
+                    aiRecommendation: message.data.aiRecommendation,
+                  }),
+                  ...(message.data.redFlags && { redFlags: message.data.redFlags }),
+                  ...(message.data.vitalSigns && { vitalSigns: message.data.vitalSigns }),
+                  ...(message.data.address && { location: message.data.address }),
+                  ...(message.data.city && {
+                    location:
+                      `${message.data.address || existingEntry.location || ""}, ${message.data.city}`
+                        .trim()
+                        .replace(/^,\s*/, ""),
+                  }),
+                  ...(message.data.patientAge && { patientAge: message.data.patientAge }),
+                  ...(message.data.patientGender && { patientGender: message.data.patientGender }),
+                };
+                this.queueData.set(entryId, updatedEntry);
+                const calls = Array.from(this.queueData.values()).map(queueEntryToQueueCall);
+                this.queueUpdateCallbacks.forEach((callback) => callback(calls));
               }
             }
             break;
 
           case "queue:pong":
-            // Heartbeat response - silent
             break;
 
           case "queue:error":
@@ -578,32 +614,44 @@ export class QueueAPI {
             break;
 
           default:
-            console.warn("⚠️ [WEBSOCKET] Unknown message type:", message.type);
+            // Silently ignore unknown message types
+            break;
         }
       } catch (error) {
-        console.error("❌ [WEBSOCKET] Error parsing message:", error, "- Raw:", event.data);
+        console.error("❌ [WEBSOCKET] Error parsing message:", error);
       }
     };
 
     ws.onerror = (error) => {
-      console.error("❌ WebSocket error:", error);
-      this.notifyConnectionState({
-        isConnected: false,
-        error: "WebSocket connection error",
-      });
+      // Only log if WebSocket was actually open (not a normal close during React Strict Mode)
+      if (ws.readyState === WebSocket.OPEN) {
+        console.error("❌ WebSocket error:", error);
+        this.notifyConnectionState({
+          isConnected: false,
+          error: "WebSocket connection error",
+        });
+      }
     };
 
     ws.onclose = (event) => {
-      console.log("🔌 WebSocket disconnected from queue dashboard", {
-        code: event.code,
-        reason: event.reason,
-        wasClean: event.wasClean,
-      });
-      // Notify connection state
-      this.notifyConnectionState({
-        isConnected: false,
-        error: event.reason || "Connection closed",
-      });
+      // Only log abnormal closures (not React Strict Mode cleanup)
+      // Code 1006 = abnormal closure, Code 1000 = normal closure
+      const isAbnormal = !event.wasClean && event.code !== 1000;
+      if (isAbnormal && ws === this.ws) {
+        console.warn("⚠️ WebSocket disconnected unexpectedly", {
+          code: event.code,
+          reason: event.reason,
+        });
+      }
+
+      // Only notify if this was the active WebSocket
+      if (ws === this.ws) {
+        this.notifyConnectionState({
+          isConnected: false,
+          error: isAbnormal ? event.reason || "Connection closed" : undefined,
+        });
+      }
+
       // Only clear if this is the current WebSocket instance
       if (this.ws === ws) {
         this.ws = null;
@@ -623,7 +671,7 @@ export class QueueAPI {
 
       // Close WebSocket only if no more subscribers
       if (this.queueUpdateCallbacks.size === 0) {
-        console.log("🔌 [QUEUE] No more subscribers, closing WebSocket");
+        // Close queue dashboard WebSocket (silently during cleanup)
         if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
           ws.close();
         }
@@ -633,6 +681,15 @@ export class QueueAPI {
           this.wsReadyPromise = null;
           this.wsReadyResolve = null;
           this.queueData.clear();
+        }
+
+        // Close realtime dashboard WebSocket (silently during cleanup)
+        if (
+          this.realtimeWs &&
+          (this.realtimeWs.readyState === WebSocket.OPEN ||
+            this.realtimeWs.readyState === WebSocket.CONNECTING)
+        ) {
+          this.realtimeWs.close();
         }
       }
     };
@@ -722,6 +779,142 @@ export class QueueAPI {
         console.log("✅ [TRANSCRIPT] Unsubscribe message sent");
       }
     };
+  }
+
+  /**
+   * Initialize realtime dashboard WebSocket for domain events
+   * This is a separate WebSocket connection that receives CallInfoUpdatedEvent
+   * @private
+   */
+  private static initializeRealtimeDashboard(wsUrl: string): void {
+    if (!this.realtimeWsReadyPromise) {
+      this.realtimeWsReadyPromise = new Promise((resolve) => {
+        this.realtimeWsReadyResolve = resolve;
+      });
+    }
+
+    const realtimeWs = new WebSocket(`${wsUrl}/ws/dashboard`);
+    this.realtimeWs = realtimeWs;
+
+    realtimeWs.onopen = () => {
+      // Subscribe to "queue" room to receive CallInfoUpdatedEvent
+      realtimeWs.send(
+        JSON.stringify({
+          type: "subscribe",
+          room: "queue",
+        })
+      );
+
+      if (this.realtimeWs === realtimeWs && this.realtimeWsReadyResolve) {
+        this.realtimeWsReadyResolve();
+        this.realtimeWsReadyResolve = null;
+      }
+    };
+
+    realtimeWs.onmessage = (event) => {
+      try {
+        const message = JSON.parse(event.data);
+
+        switch (message.type) {
+          case "connection":
+          case "subscribed":
+          case "pong":
+            // Silently handle connection lifecycle messages
+            break;
+
+          case "event":
+            if (message.event?.type === "domain_event") {
+              const eventData = message.event.data;
+              // Check if this is CallInfoUpdatedEvent by structure (callId + extractedData)
+              if (eventData?.callId && eventData?.extractedData) {
+                this.handleCallInfoUpdatedEvent(eventData);
+              }
+            }
+            break;
+
+          default:
+            break;
+        }
+      } catch (error) {
+        console.error("❌ [REALTIME] Error parsing message:", error);
+      }
+    };
+
+    realtimeWs.onerror = (error) => {
+      // Only log if WebSocket was actually open (not a normal close during React Strict Mode)
+      if (realtimeWs.readyState === WebSocket.OPEN) {
+        console.error("❌ [REALTIME] WebSocket error:", error);
+      }
+    };
+
+    realtimeWs.onclose = (event) => {
+      // Only log abnormal closures (not React Strict Mode cleanup)
+      const isAbnormal = !event.wasClean && event.code !== 1000;
+      if (isAbnormal && realtimeWs === this.realtimeWs) {
+        console.warn("⚠️ [REALTIME] WebSocket disconnected unexpectedly", {
+          code: event.code,
+          reason: event.reason,
+        });
+      }
+
+      // Only clear if this is the current WebSocket instance
+      if (this.realtimeWs === realtimeWs) {
+        this.realtimeWs = null;
+        this.realtimeWsReadyPromise = null;
+        this.realtimeWsReadyResolve = null;
+      }
+    };
+  }
+
+  /**
+   * Handle CallInfoUpdatedEvent from realtime dashboard
+   * @private
+   */
+  private static handleCallInfoUpdatedEvent(eventData: {
+    callId: string;
+    updatedFields: string[];
+    extractedData: {
+      age?: number;
+      gender?: string;
+      address?: string;
+      city?: string;
+      postalCode?: string;
+      priority?: "P0" | "P1" | "P2" | "P3";
+      priorityReason?: string;
+      chiefComplaint?: string;
+      currentSymptoms?: string;
+      consciousness?: string;
+    };
+  }): void {
+    const entryToUpdate = Array.from(this.queueData.entries()).find(
+      ([, entry]) => entry.callId === eventData.callId
+    );
+
+    if (entryToUpdate) {
+      const [entryId, existingEntry] = entryToUpdate;
+      const extracted = eventData.extractedData;
+
+      const updatedEntry = {
+        ...existingEntry,
+        ...(extracted.priority && { priority: extracted.priority }),
+        ...(extracted.chiefComplaint && { chiefComplaint: extracted.chiefComplaint }),
+        ...(extracted.currentSymptoms && {
+          keySymptoms: extracted.currentSymptoms.split(",").map((s) => s.trim()),
+        }),
+        ...(extracted.address && { location: extracted.address }),
+        ...(extracted.city && {
+          location: `${extracted.address || existingEntry.location || ""}, ${extracted.city}`
+            .trim()
+            .replace(/^,\s*/, ""),
+        }),
+        ...(extracted.age && { patientAge: extracted.age }),
+        ...(extracted.gender && { patientGender: extracted.gender }),
+      };
+
+      this.queueData.set(entryId, updatedEntry);
+      const calls = Array.from(this.queueData.values()).map(queueEntryToQueueCall);
+      this.queueUpdateCallbacks.forEach((callback) => callback(calls));
+    }
   }
 
   /**
@@ -855,10 +1048,16 @@ export class QueueAPI {
     if (this.ws) {
       this.ws.close();
     }
+    if (this.realtimeWs) {
+      this.realtimeWs.close();
+    }
     this.ws = null;
+    this.realtimeWs = null;
     this.transcriptCallbacks.clear();
     this.wsReadyPromise = null;
     this.wsReadyResolve = null;
+    this.realtimeWsReadyPromise = null;
+    this.realtimeWsReadyResolve = null;
     this.queueUpdateCallbacks.clear();
     this.queueData.clear();
     this.sessionId = null;

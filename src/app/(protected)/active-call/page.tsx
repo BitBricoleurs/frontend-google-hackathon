@@ -106,7 +106,32 @@ export default function ActiveCallPage() {
 
   // Find current call data from queue
   const currentCallData = useMemo(() => {
-    return calls.find((call) => call.callId === callId);
+    const foundCall = calls.find((call) => call.callId === callId);
+
+    // Debug logging for AI Insights
+    if (foundCall) {
+      console.log("🔍 [ACTIVE-CALL] Current call data for AI Insights:", {
+        callId: foundCall.callId,
+        chiefComplaint: foundCall.chiefComplaint,
+        aiSummary: foundCall.aiSummary,
+        aiRecommendation: foundCall.aiRecommendation,
+        keySymptoms: foundCall.keySymptoms,
+        redFlags: foundCall.redFlags,
+        patientAge: foundCall.patientAge,
+        patientGender: foundCall.patientGender,
+        location: foundCall.location,
+        priority: foundCall.priority,
+        emotionalState: foundCall.emotionalState,
+      });
+    } else {
+      console.log("🔍 [ACTIVE-CALL] No call data found for callId:", callId);
+      console.log(
+        "🔍 [ACTIVE-CALL] Available calls:",
+        calls.map((c) => ({ callId: c.callId, id: c.id }))
+      );
+    }
+
+    return foundCall;
   }, [calls, callId]);
 
   // Subscribe to WebSocket connection state
@@ -131,78 +156,109 @@ export default function ActiveCallPage() {
     return () => unsubscribe();
   }, []);
 
-  // Generate AI insights from current call data
+  // Generate AI insights from current call data (matching backend structure)
   const aiInsights = useMemo((): AIInsight[] => {
     if (!currentCallData) return mockAiInsights;
 
     const insights: AIInsight[] = [];
 
-    // Priority/Urgency insight
-    const priorityConfig = {
-      high: { severity: "critical" as const, color: "red" },
-      medium: { severity: "high" as const, color: "yellow" },
-      low: { severity: "info" as const, color: "blue" },
-    };
+    // AI Summary & Recommendation (from backend aiSummary and aiRecommendation fields)
+    if (currentCallData.aiSummary || currentCallData.aiRecommendation) {
+      insights.push({
+        type: "ai-analysis",
+        icon: BrainIcon,
+        title: "AI Analysis",
+        details: [
+          currentCallData.aiSummary || "Analysis en cours...",
+          currentCallData.aiRecommendation
+            ? `Recommandation: ${currentCallData.aiRecommendation}`
+            : "",
+        ].filter(Boolean),
+        severity: "info" as const,
+      });
+    }
 
-    const priorityInfo = priorityConfig[currentCallData.priority];
-    insights.push({
-      type: "priority",
-      icon: WarningCircleIcon,
-      title: `${currentCallData.priority.toUpperCase()} Priority Call`,
-      details: [
-        `Urgency Level: ${currentCallData.priority}`,
-        `Emotional State: ${currentCallData.emotionalState}`,
-        `Wait Time: ${Math.floor(currentCallData.waitTime / 60)} minutes`,
-      ],
-      severity: priorityInfo.severity,
-    });
+    // Chief Complaint (from backend chiefComplaint field)
+    if (currentCallData.chiefComplaint) {
+      const priorityConfig = {
+        high: { severity: "critical" as const },
+        medium: { severity: "high" as const },
+        low: { severity: "info" as const },
+      };
+      const priorityInfo = priorityConfig[currentCallData.priority];
 
-    // Medical keywords insight
-    if (currentCallData.keywords && currentCallData.keywords.length > 0) {
+      insights.push({
+        type: "priority",
+        icon: WarningCircleIcon,
+        title: "Chief Complaint",
+        details: [
+          currentCallData.chiefComplaint,
+          `Priority: ${currentCallData.priority.toUpperCase()}`,
+          `Wait Time: ${Math.floor(currentCallData.waitTime / 60)} min`,
+        ],
+        severity: priorityInfo.severity,
+      });
+    }
+
+    // Red Flags (from backend redFlags field) - CRITICAL
+    if (currentCallData.redFlags && currentCallData.redFlags.length > 0) {
+      insights.push({
+        type: "red-flags",
+        icon: WarningCircleIcon,
+        title: "⚠️ Red Flags Detected",
+        details: currentCallData.redFlags,
+        severity: "critical" as const,
+      });
+    }
+
+    // Key Symptoms (from backend keySymptoms field)
+    if (currentCallData.keySymptoms && currentCallData.keySymptoms.length > 0) {
       insights.push({
         type: "medical",
         icon: HeartStraightIcon,
-        title: "Key Symptoms Detected",
-        details: currentCallData.keywords,
+        title: "Key Symptoms",
+        details: currentCallData.keySymptoms,
         severity: currentCallData.priority === "high" ? ("critical" as const) : ("high" as const),
       });
     }
 
-    // Emotional state insight
+    // Patient Information (from backend patientAge, patientGender, location fields)
+    const patientDetails: string[] = [];
+    if (currentCallData.patientAge) {
+      patientDetails.push(`Age: ${currentCallData.patientAge} ans`);
+    }
+    if (currentCallData.patientGender) {
+      patientDetails.push(`Genre: ${currentCallData.patientGender}`);
+    }
+    if (currentCallData.location) {
+      patientDetails.push(`Location: ${currentCallData.location}`);
+    }
+    if (patientDetails.length > 0) {
+      insights.push({
+        type: "patient-info",
+        icon: UserCircleIcon,
+        title: "Patient Information",
+        details: patientDetails,
+        severity: "info" as const,
+      });
+    }
+
+    // Emotional State (derived from priority and red flags)
     const emotionalStateMap = {
-      panic: { severity: "critical" as const, description: "Extreme distress detected" },
-      distress: { severity: "high" as const, description: "High stress levels" },
-      anxious: { severity: "high" as const, description: "Moderate anxiety present" },
-      calm: { severity: "info" as const, description: "Caller is relatively calm" },
+      panic: { severity: "critical" as const, description: "État critique détecté" },
+      distress: { severity: "high" as const, description: "Détresse élevée" },
+      anxious: { severity: "high" as const, description: "Anxiété modérée" },
+      calm: { severity: "info" as const, description: "État calme" },
     };
 
     const emotionalInfo = emotionalStateMap[currentCallData.emotionalState];
     insights.push({
       type: "emotion",
       icon: currentCallData.emotionalState === "panic" ? WarningCircleIcon : InfoIcon,
-      title: "Emotional State Analysis",
-      details: [
-        emotionalInfo.description,
-        `AI Status: ${currentCallData.aiStatus}`,
-        currentCallData.emotionalState === "panic" ? "Immediate attention required" : "",
-      ].filter(Boolean),
+      title: "Emotional State",
+      details: [emotionalInfo.description, `AI Status: ${currentCallData.aiStatus}`],
       severity: emotionalInfo.severity,
     });
-
-    // Location info if available
-    if (currentCallData.callerName) {
-      insights.push({
-        type: "location",
-        icon: MapPinIcon,
-        title: "Caller Information",
-        details: [
-          `Name: ${currentCallData.callerName}`,
-          `Phone: ${currentCallData.phoneNumber}`,
-          `Call ID: ${currentCallData.callId}`,
-        ],
-        severity: "info" as const,
-      });
-    }
 
     return insights;
   }, [currentCallData]);
@@ -283,7 +339,31 @@ export default function ActiveCallPage() {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Audio Status Indicator */}
+            {/* WebSocket Connection Status Indicator */}
+            <div
+              className={cn(
+                "flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium border",
+                wsConnectionState.isConnected
+                  ? "bg-green-500/10 text-green-600 border-green-500/20"
+                  : "bg-red-500/10 text-red-600 border-red-500/20"
+              )}
+            >
+              <span
+                className={cn(
+                  "h-2 w-2 rounded-full",
+                  wsConnectionState.isConnected ? "bg-green-500 animate-pulse" : "bg-red-500"
+                )}
+              />
+              <span>
+                {wsConnectionState.isConnected
+                  ? "WebSocket Connected"
+                  : wsConnectionState.error
+                    ? "Connection Error"
+                    : "Connecting..."}
+              </span>
+            </div>
+
+            {/* Audio Status Indicator - Only show when in call */}
             {isInCall && (
               <div
                 className={cn(

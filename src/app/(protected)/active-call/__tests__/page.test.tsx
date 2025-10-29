@@ -202,4 +202,334 @@ describe("ActiveCallPage", () => {
 
     expect(screen.getByText("No transcript available")).toBeInTheDocument();
   });
+
+  it("should render high priority badge", () => {
+    mockUseActiveCall.mockReturnValue({
+      ...defaultContext,
+      callId: "call-123",
+    });
+
+    mockUseQueue.mockReturnValue({
+      calls: [
+        {
+          id: "queue-1",
+          callId: "call-123",
+          priority: "high",
+          callerName: "Test",
+          phoneNumber: "+123456",
+          waitTime: 60,
+          aiStatus: "connected",
+          keywords: [],
+          emotionalState: "panic",
+        },
+      ],
+      stats: null,
+      isLoading: false,
+      error: null,
+    });
+
+    render(<ActiveCallPage />);
+
+    expect(screen.getByText("HIGH PRIORITY")).toBeInTheDocument();
+  });
+
+  it("should render AI insights when call data exists", () => {
+    mockUseActiveCall.mockReturnValue({
+      ...defaultContext,
+      callId: "call-123",
+    });
+
+    mockUseQueue.mockReturnValue({
+      calls: [
+        {
+          id: "queue-1",
+          callId: "call-123",
+          priority: "high",
+          callerName: "Test",
+          phoneNumber: "+123456",
+          waitTime: 60,
+          aiStatus: "connected",
+          keywords: ["emergency"],
+          emotionalState: "panic",
+          chiefComplaint: "Chest pain",
+          aiSummary: "Patient needs urgent care",
+          keySymptoms: ["chest pain", "shortness of breath"],
+        },
+      ],
+      stats: null,
+      isLoading: false,
+      error: null,
+    });
+
+    render(<ActiveCallPage />);
+
+    expect(screen.getByText("AI Insights")).toBeInTheDocument();
+    expect(screen.getByText("Chief Complaint")).toBeInTheDocument();
+  });
+
+  it("should render caller information card", () => {
+    mockUseActiveCall.mockReturnValue({
+      ...defaultContext,
+      callId: "call-123",
+    });
+
+    mockUseQueue.mockReturnValue({
+      calls: [
+        {
+          id: "queue-1",
+          callId: "call-123",
+          priority: "high",
+          callerName: "John Doe",
+          phoneNumber: "+1234567890",
+          waitTime: 120,
+          aiStatus: "connected",
+          keywords: [],
+          emotionalState: "calm",
+        },
+      ],
+      stats: null,
+      isLoading: false,
+      error: null,
+    });
+
+    render(<ActiveCallPage />);
+
+    expect(screen.getByText("Caller Information")).toBeInTheDocument();
+    expect(screen.getByText("John Doe")).toBeInTheDocument();
+  });
+
+  it("should subscribe to connection state on mount", () => {
+    mockUseActiveCall.mockReturnValue({
+      ...defaultContext,
+      callId: "call-123",
+    });
+
+    render(<ActiveCallPage />);
+
+    expect(mockQueueAPI.subscribeToConnectionState).toHaveBeenCalled();
+  });
+
+  it("should subscribe to connection events on mount", () => {
+    mockUseActiveCall.mockReturnValue({
+      ...defaultContext,
+      callId: "call-123",
+    });
+
+    render(<ActiveCallPage />);
+
+    expect(mockQueueAPI.subscribeToConnectionEvents).toHaveBeenCalled();
+  });
+
+  it("should format duration as 00:00:00 when duration is null", () => {
+    mockUseActiveCall.mockReturnValue({
+      ...defaultContext,
+      callId: "call-123",
+      callDuration: null,
+    });
+
+    render(<ActiveCallPage />);
+
+    // Should show mock duration
+    expect(screen.getByText("00:03:42")).toBeInTheDocument();
+  });
+
+  it("should render medium priority badge", () => {
+    mockUseActiveCall.mockReturnValue({
+      ...defaultContext,
+      callId: "call-123",
+    });
+
+    mockUseQueue.mockReturnValue({
+      calls: [
+        {
+          id: "queue-1",
+          callId: "call-123",
+          priority: "medium",
+          callerName: "Test",
+          phoneNumber: "+123456",
+          waitTime: 60,
+          aiStatus: "connecting",
+          keywords: [],
+          emotionalState: "anxious",
+        },
+      ],
+      stats: null,
+      isLoading: false,
+      error: null,
+    });
+
+    render(<ActiveCallPage />);
+
+    expect(screen.getByText("MEDIUM PRIORITY")).toBeInTheDocument();
+  });
+
+  it("should render low priority badge", () => {
+    mockUseActiveCall.mockReturnValue({
+      ...defaultContext,
+      callId: "call-123",
+    });
+
+    mockUseQueue.mockReturnValue({
+      calls: [
+        {
+          id: "queue-1",
+          callId: "call-123",
+          priority: "low",
+          callerName: "Test",
+          phoneNumber: "+123456",
+          waitTime: 30,
+          aiStatus: "pending",
+          keywords: [],
+          emotionalState: "calm",
+        },
+      ],
+      stats: null,
+      isLoading: false,
+      error: null,
+    });
+
+    render(<ActiveCallPage />);
+
+    expect(screen.getByText("LOW PRIORITY")).toBeInTheDocument();
+  });
+
+  it("should render red flags when present", () => {
+    mockUseActiveCall.mockReturnValue({
+      ...defaultContext,
+      callId: "call-123",
+    });
+
+    mockUseQueue.mockReturnValue({
+      calls: [
+        {
+          id: "queue-1",
+          callId: "call-123",
+          priority: "high",
+          callerName: "Test",
+          phoneNumber: "+123456",
+          waitTime: 60,
+          aiStatus: "connected",
+          keywords: [],
+          emotionalState: "panic",
+          redFlags: ["cardiac arrest", "unconscious"],
+        },
+      ],
+      stats: null,
+      isLoading: false,
+      error: null,
+    });
+
+    render(<ActiveCallPage />);
+
+    expect(screen.getByText("⚠️ Red Flags Detected")).toBeInTheDocument();
+  });
+
+  it("should render patient information", () => {
+    mockUseActiveCall.mockReturnValue({
+      ...defaultContext,
+      callId: "call-123",
+    });
+
+    mockUseQueue.mockReturnValue({
+      calls: [
+        {
+          id: "queue-1",
+          callId: "call-123",
+          priority: "high",
+          callerName: "Test",
+          phoneNumber: "+123456",
+          waitTime: 60,
+          aiStatus: "connected",
+          keywords: [],
+          emotionalState: "calm",
+          patientAge: 45,
+          patientGender: "male",
+          location: "123 Main St",
+        },
+      ],
+      stats: null,
+      isLoading: false,
+      error: null,
+    });
+
+    render(<ActiveCallPage />);
+
+    expect(screen.getByText("Patient Information")).toBeInTheDocument();
+    expect(screen.getByText(/Age: 45/)).toBeInTheDocument();
+  });
+
+  it("should display emotional state", () => {
+    mockUseActiveCall.mockReturnValue({
+      ...defaultContext,
+      callId: "call-123",
+    });
+
+    mockUseQueue.mockReturnValue({
+      calls: [
+        {
+          id: "queue-1",
+          callId: "call-123",
+          priority: "high",
+          callerName: "Test",
+          phoneNumber: "+123456",
+          waitTime: 60,
+          aiStatus: "connected",
+          keywords: [],
+          emotionalState: "panic",
+        },
+      ],
+      stats: null,
+      isLoading: false,
+      error: null,
+    });
+
+    render(<ActiveCallPage />);
+
+    expect(screen.getByText("Emotional State")).toBeInTheDocument();
+  });
+
+  it("should show past emergency call when status is not active", () => {
+    mockUseActiveCall.mockReturnValue({
+      ...defaultContext,
+      callId: "call-123",
+      callStatus: "completed",
+    });
+
+    render(<ActiveCallPage />);
+
+    expect(screen.getByText("Past Emergency Call")).toBeInTheDocument();
+  });
+
+  it("should render confidence score in transcript", () => {
+    mockUseActiveCall.mockReturnValue({
+      ...defaultContext,
+      callId: "call-123",
+      transcript: [
+        {
+          index: 0,
+          timestamp: "10:00:00",
+          speaker: "Patient",
+          text: "I need help",
+          confidence: 0.85,
+        },
+      ],
+    });
+
+    render(<ActiveCallPage />);
+
+    expect(screen.getByText("(85%)")).toBeInTheDocument();
+  });
+
+  it("should show connecting audio status when audio not connected", () => {
+    mockUseActiveCall.mockReturnValue({
+      ...defaultContext,
+      callId: "call-123",
+      isInCall: true,
+      isAudioConnected: false,
+    });
+
+    render(<ActiveCallPage />);
+
+    expect(screen.getByText("Connecting Audio...")).toBeInTheDocument();
+  });
 });

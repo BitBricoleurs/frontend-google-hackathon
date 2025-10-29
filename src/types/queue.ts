@@ -138,6 +138,16 @@ export interface QueueCall {
   priority: "high" | "medium" | "low";
   keywords: string[];
   emotionalState: "calm" | "distress" | "panic" | "anxious";
+
+  // AI Insights from backend (matching QueueEntry fields)
+  chiefComplaint?: string; // Main complaint/reason for call
+  aiSummary?: string; // AI-generated summary of the call
+  aiRecommendation?: string; // AI recommendation for handling
+  keySymptoms?: string[]; // Key symptoms detected by AI
+  redFlags?: string[]; // Critical red flags identified
+  patientAge?: number; // Patient age if provided
+  patientGender?: string; // Patient gender if provided
+  location?: string; // Patient location if provided
 }
 
 /**
@@ -219,6 +229,16 @@ export function queueEntryToQueueCall(entry: QueueEntry): QueueCall {
     priority: mapPriorityToUI(entry.priority),
     keywords: entry.keySymptoms || [],
     emotionalState,
+
+    // Include AI insights from backend
+    chiefComplaint: entry.chiefComplaint,
+    aiSummary: entry.aiSummary,
+    aiRecommendation: entry.aiRecommendation,
+    keySymptoms: entry.keySymptoms,
+    redFlags: entry.redFlags,
+    patientAge: entry.patientAge,
+    patientGender: entry.patientGender,
+    location: entry.location,
   };
 }
 
