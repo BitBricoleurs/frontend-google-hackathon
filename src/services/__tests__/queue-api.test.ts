@@ -1332,7 +1332,7 @@ describe("QueueAPI", () => {
       // Queue should be updated with new info
       expect(onUpdate).toHaveBeenCalled();
       const updatedCalls = onUpdate.mock.calls[0][0];
-      expect(updatedCalls[0].priority).toBe("P0");
+      expect(updatedCalls[0].priority).toBe("high"); // Converted from P0
     });
 
     it("should handle connection lifecycle messages from realtime dashboard", () => {
@@ -1388,7 +1388,7 @@ describe("QueueAPI", () => {
 
       expect(onUpdate).toHaveBeenCalled();
       const updatedCalls = onUpdate.mock.calls[0][0];
-      expect(updatedCalls[0].priority).toBe("P1");
+      expect(updatedCalls[0].priority).toBe("high"); // Converted from P1
       expect(updatedCalls[0].location).toContain("Lyon");
     });
 
@@ -1538,7 +1538,7 @@ describe("QueueAPI", () => {
       });
     });
 
-    it("should handle subscribeToTranscript when WebSocket is not ready", () => {
+    it("should handle subscribeToTranscript when WebSocket is not ready", async () => {
       const onTranscript = jest.fn();
 
       // Subscribe to transcript before WebSocket is initialized
@@ -1547,6 +1547,9 @@ describe("QueueAPI", () => {
       // Now initialize WebSocket
       QueueAPI.subscribeToQueueUpdates(jest.fn());
       mockWs.simulateOpen();
+
+      // Wait a tick for promise to resolve
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       // Should eventually send subscription
       expect(mockWs.send).toHaveBeenCalled();
