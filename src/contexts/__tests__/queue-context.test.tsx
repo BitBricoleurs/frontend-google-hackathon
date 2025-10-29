@@ -1,7 +1,7 @@
 /**
  * @jest-environment jsdom
  */
-import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent, act } from "@testing-library/react";
 import { QueueProvider, useQueue } from "../queue-context";
 import { QueueAPI } from "@/services/queue-api";
 import type { QueueCall } from "@/types/queue";
@@ -487,6 +487,140 @@ describe("QueueContext", () => {
 
     await waitFor(() => {
       expect(screen.getByTestId("error")).toHaveTextContent("Failed to update call");
+    });
+  });
+
+  it("should handle WebSocket updates and refresh stats", async () => {
+    let updateCallback: ((calls: QueueCall[]) => void) | null = null;
+
+    mockQueueAPI.subscribeToQueueUpdates.mockImplementation((callback) => {
+      updateCallback = callback;
+      return () => {};
+    });
+
+    mockQueueAPI.getQueueStats.mockResolvedValue({
+      totalCalls: 2,
+      averageWaitTime: 150,
+      aiConnected: 1,
+      aiConnecting: 1,
+      pending: 0,
+      highPriority: 1,
+    });
+
+    render(
+      <QueueProvider>
+        <TestComponent />
+      </QueueProvider>
+    );
+
+    await waitFor(() => {
+      expect(mockQueueAPI.subscribeToQueueUpdates).toHaveBeenCalled();
+    });
+
+    // Simulate WebSocket update
+    const updatedCalls: QueueCall[] = [
+      mockCall,
+      { ...mockCall, id: "call-2", callId: "call-id-2" },
+    ];
+
+    await act(async () => {
+      if (updateCallback) {
+        updateCallback(updatedCalls);
+      }
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("calls-count")).toHaveTextContent("2");
+    });
+  });
+
+  it("should cleanup WebSocket subscription on unmount", () => {
+    const unsubscribe = jest.fn();
+    mockQueueAPI.subscribeToQueueUpdates.mockReturnValue(unsubscribe);
+
+    const { unmount } = render(
+      <QueueProvider>
+        <TestComponent />
+      </QueueProvider>
+    );
+
+    unmount();
+
+    expect(unsubscribe).toHaveBeenCalled();
+  });
+
+  it("should handle stats fetch errors gracefully", async () => {
+    mockQueueAPI.getQueueStats.mockRejectedValue(new Error("Stats error"));
+
+    const consoleError = jest.spyOn(console, "error").mockImplementation(() => {});
+
+    render(
+      <QueueProvider>
+        <TestComponent />
+      </QueueProvider>
+    );
+
+    await waitFor(() => {
+      expect(mockQueueAPI.getQueueStats).toHaveBeenCalled();
+    });
+
+    // Should not crash, error is logged
+    expect(screen.getByTestId("stats")).toBeInTheDocument();
+
+    consoleError.mockRestore();
+  });
+
+  it("should not throw error when addCall succeeds", async () => {
+    mockQueueAPI.addCall.mockResolvedValue({
+      id: "call-new",
+      callId: "call-id-new",
+      callerName: "New Caller",
+      phoneNumber: "+1234567890",
+      waitTime: 0,
+      aiStatus: "pending",
+      priority: "low",
+      keywords: [],
+      emotionalState: "calm",
+    });
+
+    function AddCallSuccessComponent() {
+      const { addCall, error } = useQueue();
+      return (
+        <div>
+          <button
+            onClick={async () => {
+              await addCall({
+                callId: "call-id-new",
+                callerName: "New Caller",
+                phoneNumber: "+1234567890",
+                waitTime: 0,
+                aiStatus: "pending",
+                priority: "low",
+                keywords: [],
+                emotionalState: "calm",
+              });
+            }}
+            data-testid="add-call-btn"
+          >
+            Add Call
+          </button>
+          <div data-testid="error">{error || "No Error"}</div>
+        </div>
+      );
+    }
+
+    render(
+      <QueueProvider>
+        <AddCallSuccessComponent />
+      </QueueProvider>
+    );
+
+    const addButton = screen.getByTestId("add-call-btn");
+    fireEvent.click(addButton);
+
+    await waitFor(() => {
+      expect(mockQueueAPI.addCall).toHaveBeenCalled();
+      expect(screen.getByTestId("error")).toHaveTextContent("No Error");
     });
   });
 });

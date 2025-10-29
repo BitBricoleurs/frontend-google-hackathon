@@ -1025,4 +1025,321 @@ describe("ActiveCallContext", () => {
       expect(screen.getByTestId("in-call")).toHaveTextContent("Not In Call");
     });
   });
+
+  it("should handle connection state changes", async () => {
+    mockSearchParams.set("callId", "call-123");
+    let stateCallback:
+      | ((state: { isConnected: boolean; sessionId?: string; error?: string }) => void)
+      | null = null;
+
+    mockQueueAPI.subscribeToConnectionState.mockImplementation((callback) => {
+      stateCallback = callback;
+      return () => {};
+    });
+
+    function ConnectionStateComponent() {
+      const { isConnectedToWebSocket } = useActiveCall();
+      return (
+        <div data-testid="ws-state">{isConnectedToWebSocket ? "Connected" : "Disconnected"}</div>
+      );
+    }
+
+    render(
+      <ActiveCallProvider>
+        <ConnectionStateComponent />
+      </ActiveCallProvider>
+    );
+
+    await waitFor(() => {
+      expect(mockQueueAPI.subscribeToConnectionState).toHaveBeenCalled();
+    });
+
+    // Simulate connection state change
+    await act(async () => {
+      if (stateCallback) {
+        stateCallback({ isConnected: true, sessionId: "test-session" });
+      }
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("ws-state")).toHaveTextContent("Connected");
+    });
+  });
+
+  it("should handle ai_terminated event and update call status", async () => {
+    mockSearchParams.set("callId", "call-123");
+    let eventCallback:
+      | ((event: { type: string; data: unknown; timestamp: string }) => void)
+      | null = null;
+
+    mockQueueAPI.subscribeToConnectionEvents.mockImplementation((callback) => {
+      eventCallback = callback;
+      return () => {};
+    });
+
+    function CallStatusComponent() {
+      const { callStatus } = useActiveCall();
+      return <div data-testid="call-status">{callStatus || "Unknown"}</div>;
+    }
+
+    render(
+      <ActiveCallProvider>
+        <CallStatusComponent />
+      </ActiveCallProvider>
+    );
+
+    await waitFor(() => {
+      expect(mockQueueAPI.subscribeToConnectionEvents).toHaveBeenCalled();
+    });
+
+    // Simulate AI terminated event
+    await act(async () => {
+      if (eventCallback) {
+        eventCallback({
+          type: "ai_terminated",
+          data: { callId: "call-123", reason: "Call ended" },
+          timestamp: new Date().toISOString(),
+        });
+      }
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("call-status")).toHaveTextContent("completed");
+    });
+  });
+
+  it("should handle call_ended event and disconnect audio", async () => {
+    mockSearchParams.set("callId", "call-123");
+
+    mockHandoffApi.takeControl.mockResolvedValue({
+      success: true,
+      handoffId: "handoff-456",
+      message: "Control taken",
+      aiTerminated: true,
+    });
+
+    const mockAudioManagerInstance = {
+      connect: jest.fn().mockResolvedValue(undefined),
+      disconnect: jest.fn(),
+      requestMicrophonePermission: jest.fn().mockResolvedValue(true),
+      setMuted: jest.fn(),
+      setSpeakerOn: jest.fn(),
+      isConnected: jest.fn().mockReturnValue(true),
+    };
+
+    (mockAudioManager as unknown as jest.Mock).mockImplementation(() => mockAudioManagerInstance);
+
+    let eventCallback:
+      | ((event: { type: string; data: unknown; timestamp: string }) => void)
+      | null = null;
+
+    mockQueueAPI.subscribeToConnectionEvents.mockImplementation((callback) => {
+      eventCallback = callback;
+      return () => {};
+    });
+
+    function CallEndedComponent() {
+      const { takeCall, isAudioConnected } = useActiveCall();
+      return (
+        <div>
+          <button onClick={takeCall} data-testid="take-call-btn">
+            Take Call
+          </button>
+          <div data-testid="audio-state">{isAudioConnected ? "Connected" : "Disconnected"}</div>
+        </div>
+      );
+    }
+
+    render(
+      <ActiveCallProvider>
+        <CallEndedComponent />
+      </ActiveCallProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("take-call-btn")).toBeInTheDocument();
+    });
+
+    // Take call first
+    fireEvent.click(screen.getByTestId("take-call-btn"));
+
+    await waitFor(() => {
+      expect(mockHandoffApi.takeControl).toHaveBeenCalled();
+    });
+
+    // Simulate call ended event
+    await act(async () => {
+      if (eventCallback) {
+        eventCallback({
+          type: "call_ended",
+          data: { callId: "call-123", reason: "Caller hung up" },
+          timestamp: new Date().toISOString(),
+        });
+      }
+    });
+
+    await waitFor(() => {
+      expect(mockAudioManagerInstance.disconnect).toHaveBeenCalled();
+    });
+  });
+
+  it("should handle session_terminated event", async () => {
+    mockSearchParams.set("callId", "call-123");
+    let eventCallback:
+      | ((event: { type: string; data: unknown; timestamp: string }) => void)
+      | null = null;
+
+    mockQueueAPI.subscribeToConnectionEvents.mockImplementation((callback) => {
+      eventCallback = callback;
+      return () => {};
+    });
+
+    render(
+      <ActiveCallProvider>
+        <TestComponent />
+      </ActiveCallProvider>
+    );
+
+    await waitFor(() => {
+      expect(mockQueueAPI.subscribeToConnectionEvents).toHaveBeenCalled();
+    });
+
+    const consoleLog = jest.spyOn(console, "log").mockImplementation(() => {});
+
+    // Simulate session terminated event
+    await act(async () => {
+      if (eventCallback) {
+        eventCallback({
+          type: "session_terminated",
+          data: { reason: "Server shutdown" },
+          timestamp: new Date().toISOString(),
+        });
+      }
+    });
+
+    // Event should be logged
+    expect(consoleLog).toHaveBeenCalledWith(expect.stringContaining("Session terminated"));
+
+    consoleLog.mockRestore();
+  });
+
+  it("should handle takeCall without callId", async () => {
+    // No callId set
+    mockSearchParams.delete("callId");
+
+    function TakeCallNoIdComponent() {
+      const { takeCall } = useActiveCall();
+      return (
+        <button onClick={takeCall} data-testid="take-call-btn">
+          Take Call
+        </button>
+      );
+    }
+
+    render(
+      <ActiveCallProvider>
+        <TakeCallNoIdComponent />
+      </ActiveCallProvider>
+    );
+
+    const takeCallBtn = screen.getByTestId("take-call-btn");
+    fireEvent.click(takeCallBtn);
+
+    // Should not call takeControl
+    await waitFor(() => {
+      expect(mockHandoffApi.takeControl).not.toHaveBeenCalled();
+    });
+  });
+
+  it("should cleanup on unmount with active audio", async () => {
+    mockSearchParams.set("callId", "call-123");
+
+    mockHandoffApi.takeControl.mockResolvedValue({
+      success: true,
+      handoffId: "handoff-456",
+      message: "Control taken",
+      aiTerminated: true,
+    });
+
+    const mockAudioManagerInstance = {
+      connect: jest.fn().mockResolvedValue(undefined),
+      disconnect: jest.fn(),
+      requestMicrophonePermission: jest.fn().mockResolvedValue(true),
+      setMuted: jest.fn(),
+      setSpeakerOn: jest.fn(),
+      isConnected: jest.fn().mockReturnValue(true),
+    };
+
+    (mockAudioManager as unknown as jest.Mock).mockImplementation(() => mockAudioManagerInstance);
+
+    function TakeCallComponent() {
+      const { takeCall } = useActiveCall();
+      return (
+        <button onClick={takeCall} data-testid="take-call-btn">
+          Take Call
+        </button>
+      );
+    }
+
+    const { unmount } = render(
+      <ActiveCallProvider>
+        <TakeCallComponent />
+      </ActiveCallProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("take-call-btn")).toBeInTheDocument();
+    });
+
+    // Take call
+    fireEvent.click(screen.getByTestId("take-call-btn"));
+
+    await waitFor(() => {
+      expect(mockHandoffApi.takeControl).toHaveBeenCalled();
+    });
+
+    // Unmount should cleanup
+    unmount();
+
+    // Cleanup should be called
+    expect(mockQueueAPI.subscribeToConnectionState).toHaveBeenCalled();
+  });
+
+  it("should handle connection state with error", async () => {
+    mockSearchParams.set("callId", "call-123");
+    let stateCallback:
+      | ((state: { isConnected: boolean; sessionId?: string; error?: string }) => void)
+      | null = null;
+
+    mockQueueAPI.subscribeToConnectionState.mockImplementation((callback) => {
+      stateCallback = callback;
+      return () => {};
+    });
+
+    const consoleWarn = jest.spyOn(console, "warn").mockImplementation(() => {});
+
+    render(
+      <ActiveCallProvider>
+        <TestComponent />
+      </ActiveCallProvider>
+    );
+
+    await waitFor(() => {
+      expect(mockQueueAPI.subscribeToConnectionState).toHaveBeenCalled();
+    });
+
+    // Simulate connection error
+    await act(async () => {
+      if (stateCallback) {
+        stateCallback({ isConnected: false, error: "Connection timeout" });
+      }
+    });
+
+    expect(consoleWarn).toHaveBeenCalledWith(
+      expect.stringContaining("Connection lost"),
+      "Connection timeout"
+    );
+
+    consoleWarn.mockRestore();
+  });
 });

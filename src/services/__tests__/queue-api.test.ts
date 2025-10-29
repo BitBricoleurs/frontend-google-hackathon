@@ -917,12 +917,21 @@ describe("QueueAPI", () => {
 
   describe("Connection Control Messages", () => {
     let mockWs: MockWebSocket;
+    let mockRealtimeWs: MockWebSocket;
 
     beforeEach(() => {
       QueueAPI.__resetForTesting();
 
       mockWs = new MockWebSocket();
-      const MockWebSocketConstructor = jest.fn(() => mockWs) as unknown as typeof WebSocket;
+      mockRealtimeWs = new MockWebSocket();
+
+      const MockWebSocketConstructor = jest.fn((url: string) => {
+        // First WebSocket is for queue-dashboard, second is for realtime dashboard
+        if (url.includes("/ws/dashboard")) {
+          return mockRealtimeWs;
+        }
+        return mockWs;
+      }) as unknown as typeof WebSocket;
 
       // Add static constants
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1235,6 +1244,356 @@ describe("QueueAPI", () => {
 
       // Should not be called after unsubscribe
       expect(onEvent).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("Realtime Dashboard WebSocket", () => {
+    let mockWs: MockWebSocket;
+    let mockRealtimeWs: MockWebSocket;
+
+    beforeEach(() => {
+      QueueAPI.__resetForTesting();
+
+      mockWs = new MockWebSocket();
+      mockRealtimeWs = new MockWebSocket();
+
+      const MockWebSocketConstructor = jest.fn((url: string) => {
+        if (url.includes("/ws/dashboard")) {
+          return mockRealtimeWs;
+        }
+        return mockWs;
+      }) as unknown as typeof WebSocket;
+
+      // Add static constants
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (MockWebSocketConstructor as any).OPEN = MockWebSocket.OPEN;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (MockWebSocketConstructor as any).CONNECTING = MockWebSocket.CONNECTING;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (MockWebSocketConstructor as any).CLOSING = MockWebSocket.CLOSING;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (MockWebSocketConstructor as any).CLOSED = MockWebSocket.CLOSED;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (global as any).WebSocket = MockWebSocketConstructor;
+    });
+
+    afterEach(() => {
+      QueueAPI.__resetForTesting();
+    });
+
+    it("should initialize realtime dashboard WebSocket", () => {
+      const onUpdate = jest.fn();
+
+      QueueAPI.subscribeToQueueUpdates(onUpdate);
+      mockWs.simulateOpen();
+      mockRealtimeWs.simulateOpen();
+
+      // Realtime WebSocket should be initialized
+      expect(mockRealtimeWs.readyState).toBe(MockWebSocket.OPEN);
+    });
+
+    it("should handle CallInfoUpdatedEvent from realtime dashboard", () => {
+      const onUpdate = jest.fn();
+
+      QueueAPI.subscribeToQueueUpdates(onUpdate);
+      mockWs.simulateOpen();
+      mockRealtimeWs.simulateOpen();
+
+      // Add a queue entry first
+      mockWs.simulateMessage({
+        type: "queue:initial",
+        data: [mockQueueEntry],
+      });
+
+      onUpdate.mockClear();
+
+      // Simulate CallInfoUpdatedEvent from realtime dashboard
+      mockRealtimeWs.simulateMessage({
+        type: "event",
+        event: {
+          type: "domain_event",
+          data: {
+            callId: "call-456",
+            updatedFields: ["priority", "chiefComplaint"],
+            extractedData: {
+              priority: "P0",
+              chiefComplaint: "Cardiac arrest",
+              currentSymptoms: "chest pain, difficulty breathing",
+              age: 65,
+              gender: "male",
+              address: "123 Main St",
+              city: "Paris",
+            },
+          },
+        },
+      });
+
+      // Queue should be updated with new info
+      expect(onUpdate).toHaveBeenCalled();
+      const updatedCalls = onUpdate.mock.calls[0][0];
+      expect(updatedCalls[0].priority).toBe("P0");
+    });
+
+    it("should handle connection lifecycle messages from realtime dashboard", () => {
+      const onUpdate = jest.fn();
+
+      QueueAPI.subscribeToQueueUpdates(onUpdate);
+      mockWs.simulateOpen();
+      mockRealtimeWs.simulateOpen();
+
+      // These should be silently handled
+      mockRealtimeWs.simulateMessage({ type: "connection" });
+      mockRealtimeWs.simulateMessage({ type: "subscribed" });
+      mockRealtimeWs.simulateMessage({ type: "pong" });
+
+      // No queue updates should be triggered
+      expect(onUpdate).not.toHaveBeenCalled();
+    });
+
+    it("should handle queue:call-info-updated message (backward compatibility)", () => {
+      const onUpdate = jest.fn();
+
+      QueueAPI.subscribeToQueueUpdates(onUpdate);
+      mockWs.simulateOpen();
+      mockRealtimeWs.simulateOpen();
+
+      // Add a queue entry
+      mockWs.simulateMessage({
+        type: "queue:initial",
+        data: [mockQueueEntry],
+      });
+
+      onUpdate.mockClear();
+
+      // Send old-style call-info-updated message
+      mockWs.simulateMessage({
+        type: "queue:call-info-updated",
+        data: {
+          callId: "call-456",
+          priority: "P1",
+          priorityReason: "Chest pain",
+          chiefComplaint: "Cardiac symptoms",
+          currentSymptoms: "pain, nausea",
+          aiSummary: "Patient needs immediate care",
+          aiRecommendation: "Send ambulance",
+          redFlags: ["chest pain"],
+          vitalSigns: { heartRate: 120 },
+          address: "456 Oak St",
+          city: "Lyon",
+          patientAge: 55,
+          patientGender: "female",
+        },
+      });
+
+      expect(onUpdate).toHaveBeenCalled();
+      const updatedCalls = onUpdate.mock.calls[0][0];
+      expect(updatedCalls[0].priority).toBe("P1");
+      expect(updatedCalls[0].location).toContain("Lyon");
+    });
+
+    it("should handle realtime WebSocket errors", () => {
+      const onUpdate = jest.fn();
+
+      QueueAPI.subscribeToQueueUpdates(onUpdate);
+      mockWs.simulateOpen();
+
+      // Trigger error on realtime WebSocket
+      mockRealtimeWs.readyState = MockWebSocket.OPEN;
+      if (mockRealtimeWs.onerror) {
+        mockRealtimeWs.onerror(new Event("error"));
+      }
+
+      // Should handle error gracefully
+      expect(onUpdate).not.toHaveBeenCalled();
+    });
+
+    it("should handle realtime WebSocket close", () => {
+      const onUpdate = jest.fn();
+
+      QueueAPI.subscribeToQueueUpdates(onUpdate);
+      mockWs.simulateOpen();
+      mockRealtimeWs.simulateOpen();
+
+      // Close realtime WebSocket
+      mockRealtimeWs.simulateClose();
+
+      // Should handle close gracefully
+      expect(onUpdate).not.toHaveBeenCalled();
+    });
+
+    it("should ignore CallInfoUpdatedEvent for non-existent queue entries", () => {
+      const onUpdate = jest.fn();
+
+      QueueAPI.subscribeToQueueUpdates(onUpdate);
+      mockWs.simulateOpen();
+      mockRealtimeWs.simulateOpen();
+
+      // Send CallInfoUpdatedEvent for non-existent call
+      mockRealtimeWs.simulateMessage({
+        type: "event",
+        event: {
+          type: "domain_event",
+          data: {
+            callId: "non-existent-call",
+            updatedFields: ["priority"],
+            extractedData: {
+              priority: "P0",
+            },
+          },
+        },
+      });
+
+      // Should not update queue
+      expect(onUpdate).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("Edge cases and error conditions", () => {
+    let mockWs: MockWebSocket;
+
+    beforeEach(() => {
+      QueueAPI.__resetForTesting();
+
+      mockWs = new MockWebSocket();
+      const MockWebSocketConstructor = jest.fn(() => mockWs) as unknown as typeof WebSocket;
+
+      // Add static constants
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (MockWebSocketConstructor as any).OPEN = MockWebSocket.OPEN;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (MockWebSocketConstructor as any).CONNECTING = MockWebSocket.CONNECTING;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (MockWebSocketConstructor as any).CLOSING = MockWebSocket.CLOSING;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (MockWebSocketConstructor as any).CLOSED = MockWebSocket.CLOSED;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (global as any).WebSocket = MockWebSocketConstructor;
+    });
+
+    afterEach(() => {
+      QueueAPI.__resetForTesting();
+    });
+
+    it("should handle connection state callback errors gracefully", () => {
+      const faultyCallback = jest.fn(() => {
+        throw new Error("Callback error");
+      });
+
+      QueueAPI.subscribeToConnectionState(faultyCallback);
+      QueueAPI.subscribeToQueueUpdates(jest.fn());
+
+      mockWs.simulateOpen();
+
+      // Should not throw, error should be caught
+      expect(faultyCallback).toHaveBeenCalled();
+    });
+
+    it("should handle connection event callback errors gracefully", () => {
+      const faultyCallback = jest.fn(() => {
+        throw new Error("Callback error");
+      });
+
+      QueueAPI.subscribeToConnectionEvents(faultyCallback);
+      QueueAPI.subscribeToQueueUpdates(jest.fn());
+
+      mockWs.simulateOpen();
+      mockWs.simulateMessage({
+        type: "connected",
+        data: { sessionId: "test", timestamp: "2024-01-01T00:00:00Z" },
+      });
+
+      // Should not throw, error should be caught
+      expect(faultyCallback).toHaveBeenCalled();
+    });
+
+    it("should handle WebSocket onopen before ready promise is created", () => {
+      const onUpdate = jest.fn();
+
+      QueueAPI.subscribeToQueueUpdates(onUpdate);
+
+      // Immediately open the WebSocket
+      mockWs.simulateOpen();
+
+      // Should handle gracefully
+      expect(onUpdate).not.toHaveBeenCalled();
+    });
+
+    it("should handle connection message without data", () => {
+      const onEvent = jest.fn();
+
+      QueueAPI.subscribeToConnectionEvents(onEvent);
+      QueueAPI.subscribeToQueueUpdates(jest.fn());
+
+      mockWs.simulateOpen();
+      mockWs.simulateMessage({
+        type: "connection",
+      });
+
+      expect(onEvent).toHaveBeenCalledWith({
+        type: "connection",
+        data: {},
+        timestamp: expect.any(String),
+      });
+    });
+
+    it("should handle subscribeToTranscript when WebSocket is not ready", () => {
+      const onTranscript = jest.fn();
+
+      // Subscribe to transcript before WebSocket is initialized
+      const unsubscribe = QueueAPI.subscribeToTranscript("call-123", onTranscript);
+
+      // Now initialize WebSocket
+      QueueAPI.subscribeToQueueUpdates(jest.fn());
+      mockWs.simulateOpen();
+
+      // Should eventually send subscription
+      expect(mockWs.send).toHaveBeenCalled();
+
+      unsubscribe();
+    });
+
+    it("should handle abnormal WebSocket closure", () => {
+      const onStateChange = jest.fn();
+
+      QueueAPI.subscribeToConnectionState(onStateChange);
+      QueueAPI.subscribeToQueueUpdates(jest.fn());
+
+      mockWs.simulateOpen();
+      onStateChange.mockClear();
+
+      // Simulate abnormal close
+      if (mockWs.onclose) {
+        mockWs.onclose({
+          code: 1006,
+          reason: "Connection lost",
+          wasClean: false,
+        } as CloseEvent);
+      }
+
+      expect(onStateChange).toHaveBeenCalledWith({
+        isConnected: false,
+        error: "Connection lost",
+      });
+    });
+
+    it("should return initial connection state if subscribed with active connection", () => {
+      QueueAPI.subscribeToQueueUpdates(jest.fn());
+      mockWs.simulateOpen();
+      mockWs.simulateMessage({
+        type: "connected",
+        data: { sessionId: "session-123", timestamp: "2024-01-01T00:00:00Z" },
+      });
+
+      const onStateChange = jest.fn();
+      QueueAPI.subscribeToConnectionState(onStateChange);
+
+      // Should receive initial state immediately
+      expect(onStateChange).toHaveBeenCalledWith({
+        isConnected: true,
+        sessionId: "session-123",
+      });
     });
   });
 });
