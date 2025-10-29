@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
-import { QueueCall } from "@/components/layout/floating-queue";
+import { QueueCall } from "@/types/queue";
 import { QueueAPI, QueueStats } from "@/services/queue-api";
 
 interface QueueContextType {
@@ -108,16 +108,24 @@ export function QueueProvider({ children }: { children: React.ReactNode }) {
   }, [fetchCalls, refreshStats]);
 
   // Set up WebSocket subscription for real-time updates
-  useEffect(() => {
+  // Use useLayoutEffect to ensure WebSocket is created BEFORE child components mount
+  React.useLayoutEffect(() => {
+    console.log("🔌 [QUEUE-CONTEXT] Setting up WebSocket subscription (PRIORITY)...");
+
     const unsubscribe = QueueAPI.subscribeToQueueUpdates((updatedCalls) => {
+      console.log("📥 [QUEUE-CONTEXT] Received queue update with", updatedCalls.length, "calls");
       setCalls(updatedCalls);
-      refreshStats();
+      // Refresh stats after queue update
+      QueueAPI.getQueueStats().then(setStats).catch(console.error);
     });
 
+    console.log("✅ [QUEUE-CONTEXT] WebSocket subscription set up");
+
     return () => {
+      console.log("🧹 [QUEUE-CONTEXT] Cleaning up WebSocket subscription");
       unsubscribe();
     };
-  }, [refreshStats]);
+  }, []); // Empty deps - only run once on mount
 
   return (
     <QueueContext.Provider

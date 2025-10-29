@@ -6,6 +6,7 @@ import { AppSidebar } from "@/components/layout/app-sidebar";
 import { AppHeader } from "@/components/layout/app-header";
 import { FloatingQueue } from "@/components/layout/floating-queue";
 import { QueueProvider, useQueue } from "@/contexts/queue-context";
+import { ActiveCallProvider } from "@/contexts/active-call-context";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -82,7 +83,9 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
     <ProtectedRoute>
       <QueryProvider>
         <QueueProvider>
-          <ProtectedLayoutContent>{children}</ProtectedLayoutContent>
+          <ActiveCallProvider>
+            <ProtectedLayoutContent>{children}</ProtectedLayoutContent>
+          </ActiveCallProvider>
         </QueueProvider>
       </QueryProvider>
     </ProtectedRoute>

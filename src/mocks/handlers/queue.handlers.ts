@@ -7,7 +7,7 @@
 import { http, HttpResponse } from "msw";
 import { mockQueueCalls, calculateQueueStats } from "../data/queue.fixtures";
 import { mockErrorResponses } from "../data/auth.fixtures";
-import type { QueueCall } from "@/components/layout/floating-queue";
+import type { QueueCall } from "@/types/queue";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 

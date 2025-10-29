@@ -92,12 +92,19 @@ export function AppSidebar() {
               className={cn(
                 "flex flex-col items-center justify-center gap-2 py-4 px-3 rounded-lg transition-colors",
                 isActive
-                  ? "bg-primary text-primary-foreground"
+                  ? "bg-primary/10 text-orange-500"
                   : "text-sidebar-foreground hover:bg-primary/10 hover:text-sidebar-accent-foreground"
               )}
             >
-              <Icon className="h-6 w-6" weight={isActive ? "fill" : "regular"} />
-              <span className="text-xs font-medium text-center">{item.name}</span>
+              <Icon
+                className={cn("h-6 w-6", isActive && "text-orange-500")}
+                weight={isActive ? "fill" : "regular"}
+              />
+              <span
+                className={cn("text-xs font-medium text-center", isActive && "text-orange-500")}
+              >
+                {item.name}
+              </span>
             </Link>
           );
         })}
@@ -130,12 +137,22 @@ export function AppSidebar() {
                       className={cn(
                         "flex flex-col items-center justify-center gap-2 py-4 px-3 rounded-lg transition-colors",
                         isActive
-                          ? "bg-accent text-accent-foreground"
+                          ? "bg-accent/20 text-orange-500"
                           : "text-sidebar-foreground hover:bg-accent/10"
                       )}
                     >
-                      <Icon className="h-6 w-6" weight={isActive ? "fill" : "regular"} />
-                      <span className="text-xs font-medium text-center">{item.name}</span>
+                      <Icon
+                        className={cn("h-6 w-6", isActive && "text-orange-500")}
+                        weight={isActive ? "fill" : "regular"}
+                      />
+                      <span
+                        className={cn(
+                          "text-xs font-medium text-center",
+                          isActive && "text-orange-500"
+                        )}
+                      >
+                        {item.name}
+                      </span>
                     </Link>
                   );
                 })}
@@ -148,7 +165,7 @@ export function AppSidebar() {
             className={cn(
               "w-full flex flex-col items-center justify-center gap-2 py-4 px-3 rounded-lg transition-colors",
               pathname === "/admin"
-                ? "bg-accent text-accent-foreground"
+                ? "bg-accent/20 text-orange-500"
                 : "text-sidebar-foreground hover:bg-accent/10"
             )}
           >
@@ -157,11 +174,16 @@ export function AppSidebar() {
               transition={{ duration: 0.3 }}
             >
               <SquaresFour
-                className="h-6 w-6"
+                className={cn("h-6 w-6", pathname === "/admin" && "text-orange-500")}
                 weight={pathname === "/admin" ? "fill" : "regular"}
               />
             </motion.div>
-            <span className="text-xs font-medium text-center">
+            <span
+              className={cn(
+                "text-xs font-medium text-center",
+                pathname === "/admin" && "text-orange-500"
+              )}
+            >
               {isAdminExpanded ? "Admin Dashboard" : "Admin"}
             </span>
           </Link>
