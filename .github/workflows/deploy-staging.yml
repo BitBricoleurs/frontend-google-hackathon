@@ -1,0 +1,124 @@
+name: Deploy to Staging
+
+# Trigger this workflow when:
+# - Push to staging branch
+# - Manual trigger via GitHub UI
+on:
+  push:
+    branches:
+      - staging
+  workflow_dispatch: # Allows manual trigger from GitHub Actions tab
+
+# Environment variables used across all jobs
+env:
+  PROJECT_ID: samu-ai-474822
+  REGION: europe-west1
+  SERVICE_NAME: samu-frontend-staging
+  REGISTRY_URL: europe-west1-docker.pkg.dev/samu-ai-474822/frontend-images
+  BACKEND_API_URL: https://samu-ai-triage-staging-262427917999.europe-west1.run.app
+
+jobs:
+  deploy-staging:
+    name: Build and Deploy to Staging
+    runs-on: ubuntu-latest
+
+    # Permissions needed for GCP authentication
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      # Step 1: Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Authenticate to Google Cloud
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      # Step 3: Set up Cloud SDK
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      # Step 4: Configure Docker to use gcloud as credential helper
+      - name: Configure Docker for Artifact Registry
+        run: |
+          gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
+
+      # Step 5: Generate image tags
+      - name: Generate image tags
+        id: tags
+        run: |
+          TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+          SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+          echo "timestamp=${TIMESTAMP}" >> $GITHUB_OUTPUT
+          echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
+          echo "image_tag=staging-${TIMESTAMP}-${SHORT_SHA}" >> $GITHUB_OUTPUT
+
+      # Step 6: Build Docker image
+      - name: Build Docker image
+        run: |
+          docker build \
+            --platform linux/amd64 \
+            --build-arg NEXT_PUBLIC_API_URL="${{ env.BACKEND_API_URL }}" \
+            -t ${{ env.REGISTRY_URL }}/frontend:${{ steps.tags.outputs.image_tag }} \
+            -t ${{ env.REGISTRY_URL }}/frontend:staging-latest \
+            .
+
+      # Step 7: Push images to Artifact Registry
+      - name: Push images to Artifact Registry
+        run: |
+          docker push ${{ env.REGISTRY_URL }}/frontend:${{ steps.tags.outputs.image_tag }}
+          docker push ${{ env.REGISTRY_URL }}/frontend:staging-latest
+
+      # Step 8: Deploy to Cloud Run
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy ${{ env.SERVICE_NAME }} \
+            --image=${{ env.REGISTRY_URL }}/frontend:${{ steps.tags.outputs.image_tag }} \
+            --region=${{ env.REGION }} \
+            --platform=managed \
+            --allow-unauthenticated \
+            --quiet
+
+      # Step 9: Get service URL
+      - name: Get service URL
+        id: service
+        run: |
+          SERVICE_URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
+            --region=${{ env.REGION }} \
+            --format='value(status.url)')
+          echo "url=${SERVICE_URL}" >> $GITHUB_OUTPUT
+
+      # Step 10: Output deployment summary
+      - name: Deployment Summary
+        run: |
+          echo "## 🚀 Staging Deployment Successful" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Environment | **Staging** |" >> $GITHUB_STEP_SUMMARY
+          echo "| Service | \`${{ env.SERVICE_NAME }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Image Tag | \`${{ steps.tags.outputs.image_tag }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | \`${{ steps.tags.outputs.short_sha }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Service URL | ${{ steps.service.outputs.url }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Test the deployment:" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "curl ${{ steps.service.outputs.url }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+      # Step 11: Comment on PR (if this is a PR)
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## 🚀 Deployed to Staging\n\n**Service URL:** ${{ steps.service.outputs.url }}\n**Image Tag:** \`${{ steps.tags.outputs.image_tag }}\``
+            })
