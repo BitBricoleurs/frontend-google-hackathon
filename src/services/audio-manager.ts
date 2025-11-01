@@ -315,6 +315,23 @@ export class AudioManager {
   }
 
   /**
+   * Hang up the call - sends end_call message to backend
+   */
+  hangUp(): void {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(
+        JSON.stringify({
+          type: "end_call",
+          reason: "Operator ended call",
+        })
+      );
+    }
+
+    // Disconnect after sending end_call message
+    this.disconnect();
+  }
+
+  /**
    * Disconnect and cleanup
    */
   disconnect(): void {
