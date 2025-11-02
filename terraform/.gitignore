@@ -1,0 +1,79 @@
+# =============================================================================
+# Terraform .gitignore
+# =============================================================================
+# This file tells Git which Terraform files should NOT be committed to version control
+#
+# WHY?
+# - State files contain sensitive information and can be large
+# - Lock files are environment-specific
+# - Backup files are temporary
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Terraform State Files
+# -----------------------------------------------------------------------------
+# These files contain the current state of your infrastructure
+# They may contain sensitive data (API keys, passwords, etc.)
+# Use remote state (GCS backend) instead for team collaboration
+
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+
+# -----------------------------------------------------------------------------
+# Terraform Lock Files
+# -----------------------------------------------------------------------------
+# Lock file for providers (keeps track of provider versions)
+# Some teams commit this, others don't - uncomment if needed
+# .terraform.lock.hcl
+
+# -----------------------------------------------------------------------------
+# Terraform Directories
+# -----------------------------------------------------------------------------
+# Contains downloaded providers and modules
+.terraform/
+.terraform.lock.hcl
+
+# -----------------------------------------------------------------------------
+# Crash Log Files
+# -----------------------------------------------------------------------------
+# Created when Terraform crashes (useful for debugging but shouldn't be committed)
+crash.log
+crash.*.log
+
+# -----------------------------------------------------------------------------
+# Variable Files with Sensitive Data
+# -----------------------------------------------------------------------------
+# If you have local override files with secrets, add them here
+# (The terraform.tfvars files in this project are safe to commit)
+#
+# *.tfvars
+# *.tfvars.json
+# override.tf
+# override.tf.json
+# *_override.tf
+# *_override.tf.json
+
+# -----------------------------------------------------------------------------
+# CLI Configuration Files
+# -----------------------------------------------------------------------------
+# Terraform CLI configuration with credentials
+.terraformrc
+terraform.rc
+
+# -----------------------------------------------------------------------------
+# Plan Files
+# -----------------------------------------------------------------------------
+# Output from 'terraform plan' - may contain sensitive data
+*.tfplan
+*.tfplan.*
+
+# -----------------------------------------------------------------------------
+# IDE and Editor Files
+# -----------------------------------------------------------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
