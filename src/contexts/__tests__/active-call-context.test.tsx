@@ -1342,4 +1342,292 @@ describe("ActiveCallContext", () => {
 
     consoleWarn.mockRestore();
   });
+
+  describe("hangUpCall", () => {
+    it("should hang up call successfully and update state", async () => {
+      mockSearchParams.set("callId", "call-123");
+
+      mockHandoffApi.takeControl.mockResolvedValue({
+        success: true,
+        handoffId: "handoff-456",
+        message: "Control taken",
+        aiTerminated: true,
+      });
+
+      const mockAudioManagerInstance = {
+        connect: jest.fn().mockResolvedValue(undefined),
+        disconnect: jest.fn(),
+        requestMicrophonePermission: jest.fn().mockResolvedValue(true),
+        setMuted: jest.fn(),
+        setSpeakerOn: jest.fn(),
+        isConnected: jest.fn().mockReturnValue(true),
+        hangUp: jest.fn(),
+      };
+
+      (mockAudioManager as unknown as jest.Mock).mockImplementation(() => mockAudioManagerInstance);
+
+      function HangUpComponent() {
+        const { takeCall, hangUpCall, isInCall, callStatus } = useActiveCall();
+        return (
+          <div>
+            <button onClick={takeCall} data-testid="take-call-btn">
+              Take Call
+            </button>
+            <button onClick={hangUpCall} data-testid="hang-up-btn">
+              Hang Up
+            </button>
+            <div data-testid="in-call">{isInCall ? "In Call" : "Not In Call"}</div>
+            <div data-testid="call-status">{callStatus || "Unknown"}</div>
+          </div>
+        );
+      }
+
+      render(
+        <ActiveCallProvider>
+          <HangUpComponent />
+        </ActiveCallProvider>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId("take-call-btn")).toBeInTheDocument();
+      });
+
+      // Take call first
+      fireEvent.click(screen.getByTestId("take-call-btn"));
+
+      await waitFor(() => {
+        expect(mockHandoffApi.takeControl).toHaveBeenCalled();
+        expect(screen.getByTestId("in-call")).toHaveTextContent("In Call");
+      });
+
+      // Now hang up
+      fireEvent.click(screen.getByTestId("hang-up-btn"));
+
+      await waitFor(() => {
+        expect(mockAudioManagerInstance.hangUp).toHaveBeenCalled();
+        expect(screen.getByTestId("in-call")).toHaveTextContent("Not In Call");
+        expect(screen.getByTestId("call-status")).toHaveTextContent("completed");
+      });
+    });
+
+    it("should show error when hanging up without active call", () => {
+      mockSearchParams.set("callId", "call-123");
+
+      function HangUpComponent() {
+        const { hangUpCall } = useActiveCall();
+        return (
+          <button onClick={hangUpCall} data-testid="hang-up-btn">
+            Hang Up
+          </button>
+        );
+      }
+
+      render(
+        <ActiveCallProvider>
+          <HangUpComponent />
+        </ActiveCallProvider>
+      );
+
+      // Try to hang up without taking call first
+      fireEvent.click(screen.getByTestId("hang-up-btn"));
+
+      // Should not crash, error handling is done via toast
+      expect(screen.getByTestId("hang-up-btn")).toBeInTheDocument();
+    });
+
+    it("should handle hangUp errors gracefully", async () => {
+      mockSearchParams.set("callId", "call-123");
+
+      mockHandoffApi.takeControl.mockResolvedValue({
+        success: true,
+        handoffId: "handoff-456",
+        message: "Control taken",
+        aiTerminated: true,
+      });
+
+      const mockAudioManagerInstance = {
+        connect: jest.fn().mockResolvedValue(undefined),
+        disconnect: jest.fn(),
+        requestMicrophonePermission: jest.fn().mockResolvedValue(true),
+        setMuted: jest.fn(),
+        setSpeakerOn: jest.fn(),
+        isConnected: jest.fn().mockReturnValue(true),
+        hangUp: jest.fn().mockImplementation(() => {
+          throw new Error("Failed to hang up");
+        }),
+      };
+
+      (mockAudioManager as unknown as jest.Mock).mockImplementation(() => mockAudioManagerInstance);
+
+      function HangUpComponent() {
+        const { takeCall, hangUpCall } = useActiveCall();
+        return (
+          <div>
+            <button onClick={takeCall} data-testid="take-call-btn">
+              Take Call
+            </button>
+            <button onClick={hangUpCall} data-testid="hang-up-btn">
+              Hang Up
+            </button>
+          </div>
+        );
+      }
+
+      render(
+        <ActiveCallProvider>
+          <HangUpComponent />
+        </ActiveCallProvider>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId("take-call-btn")).toBeInTheDocument();
+      });
+
+      // Take call first
+      fireEvent.click(screen.getByTestId("take-call-btn"));
+
+      await waitFor(() => {
+        expect(mockHandoffApi.takeControl).toHaveBeenCalled();
+      });
+
+      // Try to hang up (should handle error)
+      fireEvent.click(screen.getByTestId("hang-up-btn"));
+
+      // Should not crash
+      expect(screen.getByTestId("hang-up-btn")).toBeInTheDocument();
+    });
+
+    it("should clear audio manager reference after hang up", async () => {
+      mockSearchParams.set("callId", "call-123");
+
+      mockHandoffApi.takeControl.mockResolvedValue({
+        success: true,
+        handoffId: "handoff-456",
+        message: "Control taken",
+        aiTerminated: true,
+      });
+
+      const mockAudioManagerInstance = {
+        connect: jest.fn().mockImplementation(async (_handoffId, _onMessage, onConnected) => {
+          // Simulate successful connection
+          if (onConnected) {
+            onConnected();
+          }
+        }),
+        disconnect: jest.fn(),
+        requestMicrophonePermission: jest.fn().mockResolvedValue(true),
+        setMuted: jest.fn(),
+        setSpeakerOn: jest.fn(),
+        isConnected: jest.fn().mockReturnValue(true),
+        hangUp: jest.fn(),
+      };
+
+      (mockAudioManager as unknown as jest.Mock).mockImplementation(() => mockAudioManagerInstance);
+
+      function HangUpComponent() {
+        const { takeCall, hangUpCall, isAudioConnected } = useActiveCall();
+        return (
+          <div>
+            <button onClick={takeCall} data-testid="take-call-btn">
+              Take Call
+            </button>
+            <button onClick={hangUpCall} data-testid="hang-up-btn">
+              Hang Up
+            </button>
+            <div data-testid="audio-connected">
+              {isAudioConnected ? "Audio Connected" : "Audio Disconnected"}
+            </div>
+          </div>
+        );
+      }
+
+      render(
+        <ActiveCallProvider>
+          <HangUpComponent />
+        </ActiveCallProvider>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId("take-call-btn")).toBeInTheDocument();
+      });
+
+      // Take call first
+      await act(async () => {
+        fireEvent.click(screen.getByTestId("take-call-btn"));
+      });
+
+      await waitFor(() => {
+        expect(screen.getByTestId("audio-connected")).toHaveTextContent("Audio Connected");
+      });
+
+      // Hang up
+      fireEvent.click(screen.getByTestId("hang-up-btn"));
+
+      await waitFor(() => {
+        expect(screen.getByTestId("audio-connected")).toHaveTextContent("Audio Disconnected");
+      });
+    });
+
+    it("should update call status to completed after hang up", async () => {
+      mockSearchParams.set("callId", "call-123");
+
+      mockHandoffApi.takeControl.mockResolvedValue({
+        success: true,
+        handoffId: "handoff-456",
+        message: "Control taken",
+        aiTerminated: true,
+      });
+
+      const mockAudioManagerInstance = {
+        connect: jest.fn().mockResolvedValue(undefined),
+        disconnect: jest.fn(),
+        requestMicrophonePermission: jest.fn().mockResolvedValue(true),
+        setMuted: jest.fn(),
+        setSpeakerOn: jest.fn(),
+        isConnected: jest.fn().mockReturnValue(true),
+        hangUp: jest.fn(),
+      };
+
+      (mockAudioManager as unknown as jest.Mock).mockImplementation(() => mockAudioManagerInstance);
+
+      function StatusComponent() {
+        const { takeCall, hangUpCall, callStatus } = useActiveCall();
+        return (
+          <div>
+            <button onClick={takeCall} data-testid="take-call-btn">
+              Take Call
+            </button>
+            <button onClick={hangUpCall} data-testid="hang-up-btn">
+              Hang Up
+            </button>
+            <div data-testid="status">{callStatus || "No Status"}</div>
+          </div>
+        );
+      }
+
+      render(
+        <ActiveCallProvider>
+          <StatusComponent />
+        </ActiveCallProvider>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId("take-call-btn")).toBeInTheDocument();
+      });
+
+      // Take call
+      fireEvent.click(screen.getByTestId("take-call-btn"));
+
+      await waitFor(() => {
+        expect(screen.getByTestId("status")).toHaveTextContent("active");
+      });
+
+      // Hang up
+      fireEvent.click(screen.getByTestId("hang-up-btn"));
+
+      await waitFor(() => {
+        expect(screen.getByTestId("status")).toHaveTextContent("completed");
+      });
+    });
+  });
 });

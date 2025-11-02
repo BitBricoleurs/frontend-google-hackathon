@@ -36,6 +36,7 @@ interface ActiveCallContextType {
   setIsSpeakerOn: (speakerOn: boolean) => void;
   isInCall: boolean;
   takeCall: () => Promise<void>;
+  hangUpCall: () => void;
   isAudioConnected: boolean;
 }
 
@@ -210,6 +211,31 @@ export function ActiveCallProvider({ children }: ActiveCallProviderProps) {
     }
   };
 
+  const hangUpCall = () => {
+    if (!audioManagerRef.current) {
+      toast.error("No active call to hang up");
+      return;
+    }
+
+    try {
+      // Send hang up message via WebSocket
+      audioManagerRef.current.hangUp();
+
+      // Update UI state
+      setIsInCall(false);
+      setIsAudioConnected(false);
+      setCallStatus("completed");
+
+      toast.success("Call ended");
+
+      // Clear the audio manager reference
+      audioManagerRef.current = null;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to hang up call";
+      toast.error(errorMessage);
+    }
+  };
+
   // WebSocket connection state monitoring
   useEffect(() => {
     console.log("🔌 [ACTIVE-CALL] Setting up connection state monitoring");
@@ -327,6 +353,7 @@ export function ActiveCallProvider({ children }: ActiveCallProviderProps) {
     setIsSpeakerOn: handleSetSpeakerOn,
     isInCall,
     takeCall,
+    hangUpCall,
     isAudioConnected,
   };
 

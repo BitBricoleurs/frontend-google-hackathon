@@ -86,6 +86,7 @@ export default function ActiveCallPage() {
     setIsSpeakerOn,
     isInCall,
     takeCall,
+    hangUpCall,
     isAudioConnected,
   } = useActiveCall();
 
@@ -425,9 +426,7 @@ export default function ActiveCallPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <TranslateIcon className="h-4 w-4 text-muted-foreground" weight="duotone" />
-                      <span className="text-xs text-muted-foreground">
-                        Auto-translating from Spanish
-                      </span>
+                      <span className="text-xs text-muted-foreground">Auto-translating</span>
                     </div>
                   </div>
                 </div>
@@ -465,36 +464,6 @@ export default function ActiveCallPage() {
 
                 {/* Insights List */}
                 <div className="flex-1 overflow-auto p-4 space-y-4">
-                  {/* WebSocket Connection Status */}
-                  <div className="rounded-lg border border-border bg-card p-3 mb-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={cn(
-                            "h-2 w-2 rounded-full",
-                            wsConnectionState.isConnected
-                              ? "bg-green-500 animate-pulse"
-                              : "bg-red-500"
-                          )}
-                        />
-                        <span className="text-xs text-muted-foreground">
-                          {wsConnectionState.isConnected
-                            ? "Real-time Updates Active"
-                            : "Disconnected"}
-                        </span>
-                      </div>
-                      {wsConnectionState.sessionId && (
-                        <span className="text-xs text-muted-foreground font-mono">
-                          {wsConnectionState.sessionId.slice(0, 8)}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {aiInsights.map((insight, index) => (
-                    <InsightCard key={index} insight={insight} />
-                  ))}
-
                   {/* Caller Info Card - Real Data from WebSocket */}
                   <div className="rounded-lg border border-border bg-card p-4">
                     <div className="flex items-center gap-2 mb-3">
@@ -539,7 +508,9 @@ export default function ActiveCallPage() {
                       </div>
                     </div>
                   </div>
-
+                  {aiInsights.map((insight, index) => (
+                    <InsightCard key={index} insight={insight} />
+                  ))}
                   {/* Connection Events Log (for debugging) */}
                   {connectionEvents.length > 0 && (
                     <div className="rounded-lg border border-border bg-card p-4">
@@ -600,7 +571,10 @@ export default function ActiveCallPage() {
                   )}
                 </button>
 
-                <button className="flex h-16 w-16 items-center justify-center rounded-full bg-red-500 text-white hover:bg-red-600 transition-colors shadow-lg">
+                <button
+                  onClick={hangUpCall}
+                  className="flex h-16 w-16 items-center justify-center rounded-full bg-red-500 text-white hover:bg-red-600 transition-colors shadow-lg"
+                >
                   <PhoneXIcon className="h-8 w-8" weight="fill" />
                 </button>
 
