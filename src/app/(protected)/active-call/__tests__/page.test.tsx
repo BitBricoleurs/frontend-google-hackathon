@@ -264,7 +264,7 @@ describe("ActiveCallPage", () => {
 
     render(<ActiveCallPage />);
 
-    expect(screen.getByText("AI Medical Analysis")).toBeInTheDocument();
+    expect(screen.getByText("AI Insights")).toBeInTheDocument();
     expect(screen.getByText("Chief Complaint")).toBeInTheDocument();
   });
 
@@ -286,9 +286,6 @@ describe("ActiveCallPage", () => {
           aiStatus: "connected",
           keywords: [],
           emotionalState: "calm",
-          patientAge: 45,
-          patientGender: "Male",
-          location: "Paris",
         },
       ],
       stats: null,
@@ -298,7 +295,7 @@ describe("ActiveCallPage", () => {
 
     render(<ActiveCallPage />);
 
-    expect(screen.getByText("Patient Information")).toBeInTheDocument();
+    expect(screen.getByText("Caller Information")).toBeInTheDocument();
     expect(screen.getByText("John Doe")).toBeInTheDocument();
   });
 

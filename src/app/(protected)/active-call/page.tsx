@@ -453,103 +453,54 @@ export default function ActiveCallPage() {
 
             <ResizablePanel defaultSize={34} minSize={20}>
               {/* Right Column - AI Insights */}
-              <div className="flex h-full flex-col bg-gradient-to-b from-muted/20 to-muted/40">
+              <div className="flex h-full flex-col bg-muted/30">
                 {/* AI Header */}
-                <div className="border-b border-border bg-gradient-to-r from-primary/5 to-primary/10 px-6 py-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-primary/10">
-                      <BrainIcon className="h-5 w-5 text-primary" weight="fill" />
-                    </div>
-                    <div>
-                      <span className="text-sm font-bold text-foreground">AI Medical Analysis</span>
-                      <p className="text-xs text-muted-foreground">
-                        Real-time insights & recommendations
-                      </p>
-                    </div>
+                <div className="border-b border-border bg-card px-6 py-3">
+                  <div className="flex items-center gap-2">
+                    <BrainIcon className="h-5 w-5 text-primary" weight="duotone" />
+                    <span className="text-sm font-medium text-foreground">AI Insights</span>
                   </div>
                 </div>
 
                 {/* Insights List */}
-                <div className="flex-1 overflow-auto p-4 space-y-3">
-                  {/* WebSocket Connection Status */}
-                  <div className="rounded-xl border-2 border-green-500/30 bg-gradient-to-r from-green-500/10 to-green-500/5 p-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={cn(
-                            "h-2.5 w-2.5 rounded-full shadow-lg",
-                            wsConnectionState.isConnected
-                              ? "bg-green-500 animate-pulse shadow-green-500/50"
-                              : "bg-red-500 shadow-red-500/50"
-                          )}
-                        />
-                        <span className="text-xs font-semibold text-foreground">
-                          {wsConnectionState.isConnected
-                            ? "Live Connection Active"
-                            : "Connection Lost"}
-                        </span>
-                      </div>
-                      {wsConnectionState.sessionId && (
-                        <span className="text-[10px] text-muted-foreground font-mono bg-muted/50 px-2 py-1 rounded">
-                          ID: {wsConnectionState.sessionId.slice(0, 8)}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {aiInsights.map((insight, index) => (
-                    <InsightCard key={index} insight={insight} />
-                  ))}
-
+                <div className="flex-1 overflow-auto p-4 space-y-4">
                   {/* Caller Info Card - Real Data from WebSocket */}
-                  <div className="rounded-xl border-2 border-primary/30 bg-gradient-to-br from-primary/10 to-primary/5 p-4">
-                    <div className="flex items-center gap-2 mb-4">
-                      <div className="p-2 rounded-lg bg-primary/20">
-                        <UserCircleIcon className="h-5 w-5 text-primary" weight="fill" />
-                      </div>
-                      <span className="text-sm font-bold text-foreground">Caller Details</span>
+                  <div className="rounded-lg border border-border bg-card p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <UserCircleIcon className="h-5 w-5 text-primary" weight="duotone" />
+                      <span className="text-sm font-medium text-foreground">
+                        Caller Information
+                      </span>
                     </div>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between p-2 rounded-lg bg-background/50">
-                        <span className="text-xs text-muted-foreground font-medium">Name</span>
-                        <span className="text-sm text-foreground font-semibold">
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Name:</span>
+                        <span className="text-foreground font-medium">
                           {currentCallData?.callerName || "Unknown"}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between p-2 rounded-lg bg-background/50">
-                        <span className="text-xs text-muted-foreground font-medium">Phone</span>
-                        <span className="text-xs text-foreground font-mono font-semibold">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Phone:</span>
+                        <span className="text-foreground font-medium font-mono text-xs">
                           {currentCallData?.phoneNumber || mockCallData.callerId}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between p-2 rounded-lg bg-background/50">
-                        <span className="text-xs text-muted-foreground font-medium">AI Status</span>
-                        <div className="flex items-center gap-1.5">
-                          <span
-                            className={cn(
-                              "h-1.5 w-1.5 rounded-full",
-                              currentCallData?.aiStatus === "connected" &&
-                                "bg-green-500 animate-pulse",
-                              currentCallData?.aiStatus === "connecting" &&
-                                "bg-yellow-500 animate-pulse",
-                              currentCallData?.aiStatus === "pending" && "bg-gray-400"
-                            )}
-                          />
-                          <span
-                            className={cn(
-                              "text-sm font-bold capitalize",
-                              currentCallData?.aiStatus === "connected" && "text-green-500",
-                              currentCallData?.aiStatus === "connecting" && "text-yellow-500",
-                              currentCallData?.aiStatus === "pending" && "text-gray-500"
-                            )}
-                          >
-                            {currentCallData?.aiStatus || "Unknown"}
-                          </span>
-                        </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">AI Status:</span>
+                        <span
+                          className={cn(
+                            "text-foreground font-medium capitalize",
+                            currentCallData?.aiStatus === "connected" && "text-green-500",
+                            currentCallData?.aiStatus === "connecting" && "text-yellow-500",
+                            currentCallData?.aiStatus === "pending" && "text-gray-500"
+                          )}
+                        >
+                          {currentCallData?.aiStatus || "Unknown"}
+                        </span>
                       </div>
-                      <div className="flex items-center justify-between p-2 rounded-lg bg-background/50">
-                        <span className="text-xs text-muted-foreground font-medium">Wait Time</span>
-                        <span className="text-sm text-foreground font-bold">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Wait Time:</span>
+                        <span className="text-foreground font-medium">
                           {currentCallData
                             ? `${Math.floor(currentCallData.waitTime / 60)}m ${currentCallData.waitTime % 60}s`
                             : "0m 0s"}
@@ -728,71 +679,44 @@ function TranscriptMessage({ message }: { message: TranscriptMessageType }) {
 }
 
 function InsightCard({ insight }: { insight: AIInsight }) {
-  const severityConfig = {
-    critical: {
-      border: "border-red-500/30",
-      bg: "bg-red-500/10",
-      iconColor: "text-red-500",
-      badgeBg: "bg-red-500/20",
-      badgeText: "text-red-600",
-    },
-    high: {
-      border: "border-yellow-500/30",
-      bg: "bg-yellow-500/10",
-      iconColor: "text-yellow-500",
-      badgeBg: "bg-yellow-500/20",
-      badgeText: "text-yellow-600",
-    },
-    info: {
-      border: "border-blue-500/30",
-      bg: "bg-blue-500/10",
-      iconColor: "text-blue-500",
-      badgeBg: "bg-blue-500/20",
-      badgeText: "text-blue-600",
-    },
+  const severityColors = {
+    critical: "border-red-500/20 bg-red-500/5",
+    high: "border-yellow-500/20 bg-yellow-500/5",
+    info: "border-blue-500/20 bg-blue-500/5",
   };
 
-  const config = severityConfig[insight.severity as keyof typeof severityConfig];
+  const severityIconColors = {
+    critical: "text-red-500",
+    high: "text-yellow-500",
+    info: "text-blue-500",
+  };
+
   const IconIcon = insight.icon;
 
   return (
     <div
       className={cn(
-        "rounded-xl border-2 p-4 transition-all hover:shadow-md",
-        config.border,
-        config.bg
+        "rounded-lg border p-4",
+        severityColors[insight.severity as keyof typeof severityColors]
       )}
     >
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <div className={cn("p-2 rounded-lg", config.badgeBg)}>
-            <IconIcon className={cn("h-5 w-5", config.iconColor)} weight="duotone" />
-          </div>
-          <span className="text-sm font-semibold text-foreground">{insight.title}</span>
-        </div>
-        <span
+      <div className="flex items-center gap-2 mb-2">
+        <IconIcon
           className={cn(
-            "text-[10px] font-bold uppercase px-2 py-1 rounded-full",
-            config.badgeBg,
-            config.badgeText
+            "h-5 w-5",
+            severityIconColors[insight.severity as keyof typeof severityIconColors]
           )}
-        >
-          {insight.severity}
-        </span>
+          weight="duotone"
+        />
+        <span className="text-sm font-medium text-foreground">{insight.title}</span>
       </div>
-      <div className="space-y-2 ml-1">
+      <ul className="space-y-1">
         {insight.details.map((detail: string, index: number) => (
-          <div key={index} className="flex items-start gap-2">
-            <span
-              className={cn(
-                "mt-1.5 h-1.5 w-1.5 rounded-full shrink-0",
-                config.iconColor.replace("text-", "bg-")
-              )}
-            />
-            <span className="text-sm text-foreground/90 leading-relaxed">{detail}</span>
-          </div>
+          <li key={index} className="text-xs text-muted-foreground pl-4">
+            • {detail}
+          </li>
         ))}
-      </div>
+      </ul>
     </div>
   );
 }
