@@ -554,4 +554,64 @@ describe("AudioManager", () => {
       expect(result).toBe(false);
     });
   });
+
+  describe("hangUp", () => {
+    it("should send end_call message and disconnect when WebSocket is open", async () => {
+      const connectPromise = audioManager.connect("handoff-123");
+      mockWsInstance.simulateOpen();
+      await connectPromise;
+
+      expect(audioManager.isConnected()).toBe(true);
+
+      audioManager.hangUp();
+
+      // Should have sent end_call message
+      expect(mockWsInstance.send).toHaveBeenCalledWith(
+        JSON.stringify({
+          type: "end_call",
+          reason: "Operator ended call",
+        })
+      );
+
+      // Should disconnect after sending message
+      expect(mockWsInstance.close).toHaveBeenCalled();
+      expect(audioManager.isConnected()).toBe(false);
+    });
+
+    it("should only disconnect when WebSocket is not open", () => {
+      // Don't connect, just call hangUp
+      audioManager.hangUp();
+
+      // Should not have sent any message
+      expect(mockWsInstance.send).not.toHaveBeenCalled();
+
+      // Should still call disconnect (which is safe when not connected)
+      expect(audioManager.isConnected()).toBe(false);
+    });
+
+    it("should handle hangUp when WebSocket is in CONNECTING state", () => {
+      audioManager.connect("handoff-123");
+      // Don't simulate open, leave in CONNECTING state
+
+      audioManager.hangUp();
+
+      // Should not send message when not OPEN
+      expect(mockWsInstance.send).not.toHaveBeenCalled();
+
+      // Should disconnect immediately
+      expect(mockWsInstance.close).toHaveBeenCalled();
+    });
+
+    it("should handle multiple hangUp calls gracefully", async () => {
+      const connectPromise = audioManager.connect("handoff-123");
+      mockWsInstance.simulateOpen();
+      await connectPromise;
+
+      audioManager.hangUp();
+      audioManager.hangUp(); // Call again
+
+      // Should only close once
+      expect(mockWsInstance.close).toHaveBeenCalledTimes(1);
+    });
+  });
 });
