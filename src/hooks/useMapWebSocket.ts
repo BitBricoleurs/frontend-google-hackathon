@@ -98,7 +98,7 @@ export function useMapWebSocket(options: UseMapWebSocketOptions = {}) {
                   status: eventData.status,
                   heading: eventData.heading,
                   speed: eventData.speed,
-                  dispatchId: eventData.dispatchId,
+                  dispatchId: eventData.dispatchId ?? null,
                   timestamp: eventData.occurredAt || new Date().toISOString(),
                 };
                 onAmbulanceLocationUpdate(update);
